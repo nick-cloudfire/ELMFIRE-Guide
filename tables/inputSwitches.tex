@@ -1,0 +1,347 @@
+% Please add the following required packages to your document preamble:
+% \usepackage[table,xcdraw]{xcolor}
+% Beamer presentation requires \usepackage{colortbl} instead of \usepackage[table,xcdraw]{xcolor}
+\begin{landscape}
+\chapter{Input Parameters for ELMFIRE}
+
+
+\begin{center}
+\begin{longtable}{lllll}
+\caption{All the input options and namelists in ELMFIRE. }
+\label{tab:inputSwitches}\\
+\textbf{Name}                                & \textbf{Default value}     & \textbf{Variable Type} & \textbf{Units}                     & \textbf{Explanation}                 \\
+\toprule
+\toprule
+\multicolumn{5}{c}{MISCELLANEOUS}                                                                                                                                              \\
+\toprule
+BUILDING\_FUEL\_MODEL\_FILE                  & 'building\_fuel\_models.csv' & string               & file                               & \ref{misc}                           \\
+FUEL\_MODEL\_FILE                            & 'null'                     & string                 & file                               & \ref{misc}                           \\
+MISCELLANEOUS\_INPUTS\_DIRECTORY             & 'null'                     & string                 & path                               & \ref{misc}                           \\
+PATH\_TO\_GDAL                               & '/usr/bin'                 & string                 & path                               & \ref{misc}                           \\
+SCRATCH                                      & 'null'                     & string                 & path                               & \ref{misc}                           \\
+\multicolumn{5}{c}{SMOKE}                                                                                                                                                      \\
+\toprule
+DT\_SMOKE\_OUTPUTS                           & 3600                       & float                  & \cellcolor[HTML]{FF0000}seconds    &                                      \\
+ENABLE\_SMOKE\_OUTPUTS                       & .FALSE.                    & bool                   & -                                  &                                      \\
+PM2P5\_RELEASE\_MIN\_FOR\_OUTPUT             & 0                          & float                  & \cellcolor[HTML]{FF0000}?          &                                      \\
+SMOKE\_HOC                                   & 12                         & float                  & \cellcolor[HTML]{FF0000}?          &                                      \\
+SMOKE\_OUTPUTS\_DUMP\_PERCENT                & 100                        & float                  & \%                                 &                                      \\
+SMOKE\_YIELD                                 & 0.01                       & float                  & \cellcolor[HTML]{FF0000}?          &                                      \\
+SMOKE\_YIELD\_BY\_FUEL                       & 0.01                       & float                  & \cellcolor[HTML]{FF0000}array ?    &                                      \\
+USE\_SMOKE\_YIELD\_BY\_FUEL                  & .FALSE.                    & bool                   & -                                  &                                      \\
+\multicolumn{5}{c}{INPUTS}                                                                                                                                                     \\
+\toprule
+ADJ\_FILENAME                                & -                          & string                 & file                               & \ref{surface_fire_spread}            \\
+ASP\_FILENAME                                & -                          & string                 & file                               & \ref{surface_fire_spread}            \\
+BLDG\_AREA\_FILENAME                         & -                          & string                 & file                               & \ref{building_spread}                \\
+BLDG\_FOOTPRINT\_FRAC\_FILENAME              & -                          & string                 & file                               & \ref{building_spread}                \\
+BLDG\_FUEL\_MODEL\_FILENAME                  & -                          & string                 & file                               & \ref{building_spread}                \\
+BLDG\_NONBURNABLE\_FRAC\_FILENAME            & -                          & string                 & file                               & \ref{building_spread}                \\
+BLDG\_SEPARATION\_DIST\_FILENAME             & -                          & string                 & file                               & \ref{building_spread}                \\
+CBD\_FILENAME                                & -                          & string                 & file                               & \ref{surface_fire_spread}            \\
+CBD\_TIMES\_100                              & .TRUE.                     & bool                   & -                                  & \ref{surface_fire_spread}            \\
+CBH\_FILENAME                                & -                          & string                 & file                               & \ref{surface_fire_spread}            \\
+CBH\_TIMES\_10                               & .TRUE.                     & bool                   & -                                  & \ref{surface_fire_spread}            \\
+CC\_FILENAME                                 & -                          & string                 & file                               & \ref{surface_fire_spread}            \\
+CC\_IN\_PERCENT                              & .TRUE.                     & bool                   & -                                  & \ref{surface_fire_spread}            \\
+CH\_FILENAME                                 & -                          & string                 & file                               & \ref{surface_fire_spread}            \\
+CH\_TIMES\_10                                & .TRUE.                     & bool                   & -                                  & \ref{surface_fire_spread}            \\
+DEM\_FILENAME                                & -                          & string                 & file                               & \ref{surface_fire_spread}            \\
+DT\_METEOROLOGY                              & -9999.9                    & float                  & seconds                            & \ref{surface_fire_spread}            \\
+FBFM\_FILENAME                               & -                          & string                 & file                               & \ref{surface_fire_spread}            \\
+FMC\_FILENAME                                & -                          & string                 & file                               & \ref{surface_fire_spread}            \\
+FOLIAR\_MOISTURE\_CONTENT                    & 90                         & float                  & \%                                 & \ref{surface_fire_spread}            \\
+FUELS\_AND\_TOPOGRAPHY\_DIRECTORY            & -                          & string                 & file                               & \ref{surface_fire_spread}            \\
+GRID\_DECLINATION                            & 0                          & float                  & degrees                            & \ref{grid_declination}               \\
+IGNITION\_MASK\_FILENAME                     & -                          & string                 & file                               & \ref{randomized_ignition}            \\
+LAND\_VALUE\_FILENAME                        & -                          & string                 & file                               & \ref{assets_at_risk}                 \\
+LH\_MOISTURE\_CONTENT                        & 60                         & float                  & \%                                 & \ref{surface_fire_spread}            \\
+LW\_MOISTURE\_CONTENT                        & 60                         & float                  & \%                                 & \ref{surface_fire_spread}            \\
+DEAD\_MC\_IN\_PERCENT                        & .TRUE.                     & bool                   & -                                  & \ref{surface_fire_spread}            \\
+LIVE\_MC\_IN\_PERCENT                        & .TRUE.                     & bool                   & -                                  & \ref{surface_fire_spread}            \\
+PHI\_FILENAME                                & -                          & string                 & file                               & \ref{surface_fire_spread}            \\
+POPULATION\_DENSITY\_FILENAME                & -                          & string                 & file                               & \ref{assets_at_risk}                 \\
+REAL\_ESTATE\_VALUE\_FILENAME                & -                          & string                 & file                               & \ref{assets_at_risk}                 \\
+SDI\_FILENAME                                & -                          & string                 & file                               & \ref{suppression}                    \\
+SLP\_FILENAME                                & -                          & string                 & file                               & \ref{surface_fire_spread}            \\
+ERC\_FILENAME                                & -                          & string                 & file                               & (to be removed)                      \\
+FMC\_FILENAME                                & -                          & string                 & file                               & \ref{surface_fire_spread}            \\
+IGNITIONS\_CSV\_FILENAME                     & -                          & string                 & file                               & \ref{randomized_ignition}            \\
+M100\_FILENAME                               & -                          & string                 & file                               & \ref{surface_fire_spread}            \\
+M10\_FILENAME                                & -                          & string                 & file                               & \ref{surface_fire_spread}            \\
+M1\_FILENAME                                 & -                          & string                 & file                               & \ref{surface_fire_spread}            \\
+MLH\_FILENAME                                & -                          & string                 & file                               & \ref{surface_fire_spread}            \\
+MLW\_FILENAME                                & -                          & string                 & file                               & \ref{surface_fire_spread}            \\
+PYROMES\_FILENAME                            & -                          & string                 & file                               & \ref{calibration}                    \\
+ROTATE\_ASP                                  & .FALSE.                    & bool                   & -                                  & \ref{grid_declination}               \\
+ROTATE\_WD                                   & .FALSE.                    & bool                   & -                                  & \ref{grid_declination}               \\
+TIMED\_LOCATIONS\_CSV                        & 'null'                     & string                 & file                               & \ref{outputs}                        \\
+WD\_FILENAME                                 & -                          & string                 & file                               & \ref{surface_fire_spread}            \\
+WS\_FILENAME                                 & -                          & string                 & file                               & \ref{surface_fire_spread}            \\
+USE\_BSQ\_XML\_HEADER                        & .TRUE.                     & bool                   & -                                  & \ref{misc}                           \\
+USE\_CONSTANT\_FMC                           & .TRUE.                     & bool                   & -                                  & \ref{surface_fire_spread}            \\
+USE\_CONSTANT\_LH                            & .TRUE.                     & bool                   & -                                  & \ref{surface_fire_spread}            \\
+USE\_CONSTANT\_LW                            & .TRUE.                     & bool                   & -                                  & \ref{surface_fire_spread}            \\
+USE\_EXISTING\_BSQS                          & .FALSE.                    & bool                   & -                                  & \ref{misc}                           \\
+USE\_LAND\_VALUE                             & .FALSE.                    & bool                   & -                                  & \ref{assets_at_risk}                 \\
+USE\_POPULATION\_DENSITY                     & .FALSE.                    & bool                   & -                                  & \ref{assets_at_risk}                 \\
+USE\_REAL\_ESTATE\_VALUE                     & .FALSE.                    & bool                   & -                                  & \ref{assets_at_risk}                 \\
+USE\_TILED\_IO                               & .FALSE.                    & bool                   & -                                  & \ref{misc}                           \\
+VRT\_INSTEAD\_OF\_TIF                        & .FALSE.                    & bool                   & -                                  & \ref{surface_fire_spread}            \\
+WEATHER\_DIRECTORY                           & -                          & string                 & path                               & \ref{surface_fire_spread}            \\
+WS\_AT\_10M                                  & .FALSE.                    & bool                   & -                                  & \ref{surface_fire_spread}            \\
+ONLY\_READ\_NEEDED\_WX\_BANDS                & .FALSE.                    & bool                   & -                                  & \ref{time}                           \\
+\multicolumn{5}{c}{OUTPUTS}                                                                                                                                                    \\
+\toprule
+ACCUMULATE\_EMBER\_FLUX                      & .FALSE.                    & bool                   & -                                  &                                      \\
+BINARY\_OUTPUTS\_DUMP\_FRACTION              & 1.00E+00                   & float                  & fraction                           & \ref{outputs}                        \\
+CALCULATE\_FLAME\_LENGTH\_STATS              & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+CALCULATE\_TIMES\_BURNED                     & .FALSE.                    & bool                   & -                                  & \ref{monte_carlo_outputs}            \\
+CONVERT\_TO\_GEOTIFF                         & .TRUE.                     & bool                   & -                                  & \ref{outputs}                        \\
+DTDUMP                                       & 3600                       & float                  & seconds                            & \ref{outputs}                        \\
+DUMP\_AFFECTED\_LAND\_VALUE                  & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+DUMP\_AFFECTED\_POPULATION                   & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+DUMP\_AFFECTED\_REAL\_ESTATE\_VALUE          & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+DUMP\_BINARY\_OUTPUTS                        & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+DUMP\_CROWN\_FIRE                            & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+DUMP\_CROWN\_FIRE\_AREA                      & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+DUMP\_EMBER\_FLUX                            & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+DUMP\_SPOTTING\_OUTPUTS                      & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+DUMP\_FIRE\_SIZE\_STATS                      & .TRUE.                     & bool                   & -                                  & \ref{outputs}                        \\
+DUMP\_FIRE\_VOLUME                           & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+DUMP\_FLAME\_LENGTH                          & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+DUMP\_FLIN                                   & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+DUMP\_HOURLY\_RASTERS                        & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+DUMP\_HPUA                                   & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+DUMP\_HRR\_TRANSIENT                         & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+DUMP\_PHI                                    & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+DUMP\_REACTION\_INTENSITY                    & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+DUMP\_SPOTTING\_IGNITION\_TIME               & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+DUMP\_SPREAD\_RATE                           & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+DUMP\_SURFACE\_FIRE                          & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+DUMP\_SURFACE\_FIRE\_AREA                    & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+DUMP\_TAGGED                                 & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+DUMP\_TIME\_OF\_ARRIVAL                      & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+DUMP\_TIMINGS                                & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+DUMP\_TOTAL\_DFC\_RECEIVED                   & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+DUMP\_TOTAL\_RAD\_RECEIVED                   & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+DUMP\_TRANSIENT\_ACREAGE                     & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+DUMP\_VELOCITY                               & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+DUMP\_WD20                                   & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+DUMP\_WS20                                   & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+EMBER\_COUNT\_BIN\_HI(:)                     & 0                          & integer*2              & \cellcolor[HTML]{FF0000}?          & \ref{outputs}                        \\
+EMBER\_COUNT\_BIN\_LO(:)                     & 0                          & integer*2              & \cellcolor[HTML]{FF0000}?          & \ref{outputs}                        \\
+FLAME\_LENGTH\_BIN\_HI(:)                    & 0                          & float                  & \cellcolor[HTML]{FF0000}?          & \ref{outputs}                        \\
+FLAME\_LENGTH\_BIN\_LO(:)                    & 0                          & float                  & \cellcolor[HTML]{FF0000}?          & \ref{outputs}                        \\
+FULL\_BINARY\_OUTPUTS                        & .TRUE.                     & bool                   & -                                  & \ref{outputs}                        \\
+MINIMUM\_AREA\_FOR\_BINARY\_OUTPUTS          & 0                          & float                  & acres                              & \ref{outputs}                        \\
+NUM\_EMBER\_COUNT\_BINS                      & 0                          & integer                & \cellcolor[HTML]{FF0000}?          & \ref{outputs}                        \\
+NUM\_FLAME\_LENGTH\_BINS                     & 0                          & integer                & \cellcolor[HTML]{FF0000}?          & \ref{outputs}                        \\
+NUM\_VIRTUAL\_STATIONS                       & 0                          & integer                & integer                            & \ref{virtual_weather_stations}       \\
+OUTPUTS\_DIRECTORY                           & -                          & string                 & path                               & \ref{outputs}                        \\
+RUN\_ID                                      & -                          & string                 & string                             & \ref{outputs}                        \\
+TIME\_AT\_BURNED\_ACRES(:)                   & -9.00E+09                  & float                  & acres                              & \ref{outputs}                        \\
+USE\_EMBER\_COUNT\_BINS                      & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+USE\_FLAME\_LENGTH\_BINS                     & .FALSE.                    & bool                   & -                                  & \ref{outputs}                        \\
+USE\_FOUR\_DIGITS\_IN\_IWX\_BAND             & .FALSE.                    & bool                   & -                                  & \ref{randomized_weather}             \\
+VIRTUAL\_STATION\_X(:)                       & 0                          & integer                & coordinate                         & \ref{virtual_weather_stations}       \\
+VIRTUAL\_STATION\_Y(:)                       & 0                          & integer                & coordinate                         & \ref{virtual_weather_stations}       \\
+\multicolumn{5}{c}{COMPUTATIONAL\_DOMAIN}                                                                                                                                      \\
+\toprule
+A\_SRS                                       & 'EPSG:32610'               & string                 & projection                         & \ref{computational_domain_size}      \\
+COMPUTATIONAL\_DOMAIN\_CELLSIZE              & 30                         & float                  & meters                             & \ref{computational_domain_size}      \\
+COMPUTATIONAL\_DOMAIN\_XLLCORNER             & 0                          & float                  & meters                             & \ref{computational_domain_size}      \\
+COMPUTATIONAL\_DOMAIN\_YLLCORNER             & 0                          & float                  & meters                             & \ref{computational_domain_size}      \\
+\multicolumn{5}{c}{TIME\_CONTROL}                                                                                                                                              \\
+\toprule
+BAND\_ONE\_HOUR\_OF\_YEAR                    & 0                          & integer                & hour                               & \ref{time}                           \\
+BURN\_PERIOD\_CENTER\_FRAC                   & 0.667                      & float                  & float                              & \ref{overnight_adjustment}           \\
+BURN\_PERIOD\_LENGTH                         & 10                         & float                  & hours                              & \ref{overnight_adjustment}           \\
+CURRENT\_YEAR                                & 1970                       & integer                & year                               & \ref{overnight_adjustment}           \\
+DT\_INTERPOLATE\_M1                          & 300                        & float                  & seconds                            & \ref{time}                           \\
+DT\_INTERPOLATE\_M10                         & 3000                       & float                  & seconds                            & \ref{time}                           \\
+DT\_INTERPOLATE\_M100                        & 30000                      & float                  & seconds                            & \ref{time}                           \\
+DT\_INTERPOLATE\_MLH                         & 9.00E+08                   & float                  & seconds                            & \ref{time}                           \\
+DT\_INTERPOLATE\_MLW                         & 9.00E+08                   & float                  & seconds                            & \ref{time}                           \\
+DT\_INTERPOLATE\_FMC                         & 9.00E+08                   & float                  & seconds                            & \ref{time}                           \\
+DT\_INTERPOLATE\_WIND                        & 300                        & float                  & seconds                            & \ref{time}                           \\
+FORECAST\_START\_HOUR                        & 20                         & float                  & hour                               & \ref{overnight_adjustment}           \\
+HOUR\_OF\_YEAR                               & 4368                       & integer                & hour                               & \ref{overnight_adjustment}           \\
+LATITUDE                                     & -40                        & float                  & degrees                            & \ref{overnight_adjustment}           \\
+LONGITUDE                                    & -120                       & float                  & degrees                            & \ref{overnight_adjustment}           \\
+OVERNIGHT\_ADJUSTMENT\_FACTOR                & 0.1                        & float                  & float                              & \ref{overnight_adjustment}           \\
+RANDOMIZE\_SIMULATION\_TSTOP                 & .FALSE.                    & bool                   & -                                  & \ref{time}                           \\
+SIMULATION\_DT                               & 5                          & float                  & seconds                            & \ref{time}                           \\
+SIMULATION\_DTMAX                            & 600                        & float                  & seconds                            & \ref{time}                           \\
+SIMULATION\_TSTART                           & 0                          & float                  & seconds                            & \ref{time}                           \\
+SIMULATION\_TSTOP                            & 3600                       & float                  & seconds                            & \ref{time}                           \\
+SUNRISE\_HOUR                                & 13                         & float                  & hour                               & \ref{overnight_adjustment}           \\
+SUNSET\_HOUR                                 & 27                         & float                  & hour                               & \ref{overnight_adjustment}           \\
+TARGET\_CFL                                  & 0.4                        & float                  & float                              & \ref{time}                           \\
+USE\_DIURNAL\_ADJUSTMENT\_FACTOR             & .FALSE.                    & bool                   & -                                  & \ref{overnight_adjustment}           \\
+\multicolumn{5}{c}{MONTE\_CARLO}                                                                                                                                               \\
+\toprule
+ADD\_TO\_IGNITION\_MASK                      & -9.00E+09                  & float                  & \cellcolor[HTML]{FF0000}?          & \ref{randomized_ignition}            \\
+ALLOW\_MULTIPLE\_IGNITIONS\_AT\_A\_PIXEL     & .FALSE.                    & bool                   & -                                  & \ref{randomized_ignition}            \\
+CSV\_FIXED\_IGNITION\_LOCATIONS              & .FALSE.                    & bool                   & -                                  & \ref{randomized_ignition}            \\
+EDGEBUFFER                                   & 3000                       & float                  & meters                             & \ref{randomized_ignition}            \\
+ERC\_IS\_PLIGNRATE                           & .FALSE.                    & bool                   & -                                  & (to be removed)                      \\
+IGNITION\_MASK\_SCALE\_FACTOR                & 1                          & float                  & float                              & \ref{randomized_ignition}            \\
+METEOROLOGY\_BAND\_START                     & -1                         & integer                & integer                            & \ref{randomized_weather}             \\
+METEOROLOGY\_BAND\_STOP                      & -1                         & integer                & integer                            & \ref{randomized_weather}             \\
+METEOROLOGY\_BAND\_SKIP\_INTERVAL            & -1                         & integer                & integer                            & \ref{randomized_weather}             \\
+NUM\_ENSEMBLE\_MEMBERS                       & 1                          & integer                & integer                            & \ref{randomized_ignition}            \\
+NUM\_RASTERS\_TO\_PERTURB                    & 0                          & integer                & integer                            & \ref{spatial_temporal_pertrubations} \\
+NUM\_METEOROLOGY\_TIMES                      & 1                          & integer                & integer                            & \ref{randomized_weather}             \\
+PDF\_LOWER\_LIMIT(:)                         & 0                          & float                  & \cellcolor[HTML]{FF0000}?          & \ref{spatial_temporal_pertrubations} \\
+PDF\_TYPE(:)                                 & 'null'                     & character              & \cellcolor[HTML]{FF0000}?          & \ref{spatial_temporal_pertrubations} \\
+PDF\_UPPER\_LIMIT(:)                         & 0                          & float                  & \cellcolor[HTML]{FF0000}?          & \ref{spatial_temporal_pertrubations} \\
+PERCENT\_OF\_PIXELS\_TO\_IGNITE              & 5                          & float                  & \%                                 & \ref{randomized_ignition}            \\
+RANDOM\_IGNITIONS                            & .FALSE.                    & bool                   & -                                  & \ref{randomized_ignition}            \\
+RANDOM\_IGNITIONS\_TYPE                      & 1                          & integer                & \cellcolor[HTML]{FF0000}?          & \ref{randomized_ignition}            \\
+RASTER\_TO\_PERTURB(:)                       & 'null'                     & string                 & layer name                         & \ref{spatial_temporal_pertrubations} \\
+SEED                                         & 2024                       & integer                & integer                            & \ref{miscellaneous_inputs}           \\
+SPATIAL\_PERTURBATION(:)                     & 'null'                     & string                 & \cellcolor[HTML]{FF0000}?          & \ref{spatial_temporal_pertrubations} \\
+TEMPORAL\_PERTURBATION(:)                    & 'null'                     & string                 & \cellcolor[HTML]{FF0000}?          & \ref{spatial_temporal_pertrubations} \\
+USE\_ERC                                     & .FALSE.                    & bool                   & -                                  & (to be removed)                      \\
+USE\_IGNITION\_MASK                          & .FALSE.                    & bool                   & -                                  & \ref{randomized_ignition}            \\
+WIND\_DIRECTION\_FLUCTUATION\_INTENSITY\_MAX & -1                         & float                  & \cellcolor[HTML]{FF0000}?          & \ref{randomized_wind_fluctuation}    \\
+WIND\_DIRECTION\_FLUCTUATION\_INTENSITY\_MIN & -1                         & float                  & \cellcolor[HTML]{FF0000}?          & \ref{randomized_wind_fluctuation}    \\
+WIND\_SPEED\_FLUCTUATION\_INTENSITY\_MAX     & -1                         & float                  & \cellcolor[HTML]{FF0000}?          & \ref{randomized_wind_fluctuation}    \\
+WIND\_SPEED\_FLUCTUATION\_INTENSITY\_MIN     & -1                         & float                  & \cellcolor[HTML]{FF0000}?          & \ref{randomized_wind_fluctuation}    \\
+PERTURB\_WIND\_DIRECTION\_FLUCTUATION\_INTENSITY & .FALSE.                & bool                   & -                                  & \ref{randomized_wind_fluctuation}    \\
+PERTURB\_WIND\_SPEED\_FLUCTUATION\_INTENSITY & .FALSE.                    & bool                   & -                                  & \ref{randomized_wind_fluctuation}    \\
+\multicolumn{5}{c}{SIMULATOR}                                                                                                                                                  \\
+\toprule
+ALLOW\_NONBURNABLE\_PIXEL\_IGNITION          & .TRUE.                     & bool                   & -                                  & \ref{randomized_ignition}            \\
+BANDTHICKNESS                                & 2                          & integer                & pixels                             & \ref{miscellaneous_inputs}           \\
+CRITICAL\_CANOPY\_COVER                      & 0.39                       & float                  & \%                                 & \ref{crown_fire}                     \\
+CROWN\_FIRE\_ADJ                             & 1                          & float                  & scale factor                       & \ref{crown_fire}                     \\
+CROWN\_FIRE\_MODEL                           & 1                          & integer                & categorical                        & \ref{crown_fire}                     \\
+CROWN\_FIRE\_SPREAD\_RATE\_LIMIT             & 250                        & float                  & ft/min                             & \ref{crown_fire}                     \\
+CROWN\_RATIO                                 & 1                          & float                  & ratio                              & \ref{surface_fire_spread}            \\
+DEBUG\_LEVEL                                 & 0                          & integer                & -                                  & \ref{miscellaneous_inputs}           \\
+DT\_WIND\_FLUCTUATIONS                       & 15                         & float                  & seconds                            & \ref{wind_fluctuations}              \\
+ESTIMATE\_URBAN\_LOSSES                      & .FALSE.                    & bool                   & -                                  & \ref{building_spread}                \\
+MAX\_LOW                                     & 8                          & float                  & ratio                              & \ref{elliptical_dimensions}          \\
+MAX\_RUNTIME                                 & 999999                     & float                  & seconts                            & \ref{miscellaneous_inputs}           \\
+MODE                                         & 1                          & integer                & categorical                        & \ref{fire_potential}                 \\
+MULTIPLE\_HOSTS                              & .FALSE.                    & bool                   & -                                  &                                      \\
+NUM\_IGNITIONS                               & 0                          & integer                & ignitions                          & \ref{point_source_ignitions}         \\
+NUM\_NODES\_OMP\_THRESHOLD                   & 999999999                  & integer                & \cellcolor[HTML]{FF0000}?          &                                      \\
+PHIS\_ADJ                                    & 1.00E+00                   & float                  & scale factor                       & \ref{elliptical_dimensions}          \\
+PHIW\_ADJ                                    & 1.00E+00                   & float                  & scale factor                       & \ref{elliptical_dimensions}          \\
+PLIGNRATE\_MIN                               & 0.00E+00                   & float                  & \cellcolor[HTML]{FF0000}?          & (to be removed)                      \\
+RANDOMIZE\_RANDOM\_SEED                      & .FALSE.                    & bool                   & -                                  & \ref{miscellaneous_inputs}           \\
+SURFACE\_ACCELERATION\_TIME\_CONSTANT        & 1                          & float                  & \cellcolor[HTML]{FF0000}-          & (to be removed)                      \\
+T\_IGN(:)                                    & 0                          & float                  & seconds                            & \ref{point_source_ignitions}         \\
+UNTAG\_CELLS\_TIMESTEP\_INTERVAL             & 10                         & integer                & \cellcolor[HTML]{FF0000}?          & \ref{cell_untagging}                 \\
+UNTAG\_TYPE\_2                               & .FALSE.                    & bool                   & -                                  & \ref{cell_untagging}                 \\
+UNTAG\_TYPE\_3                               & .FALSE.                    & bool                   & -                                  & \ref{cell_untagging}                 \\
+WIND\_DIRECTION\_FLUCTUATION\_INTENSITY      & 0                          & float                  & \cellcolor[HTML]{FF0000}?          & \ref{wind_fluctuations}              \\
+WIND\_FLUCTUATIONS                           & .FALSE.                    & bool                   & -                                  & \ref{wind_fluctuations}              \\
+WIND\_SPEED\_FLUCTUATION\_INTENSITY          & 0                          & float                  & \cellcolor[HTML]{FF0000}?          & \ref{wind_fluctuations}              \\
+X\_IGN(:)                                    & 0                          & float                  & Coordinate                         & \ref{point_source_ignitions}         \\
+Y\_IGN(:)                                    & 0                          & float                  & Coordinate                         & \ref{point_source_ignitions}         \\
+USE\_PYROMES                                 & .FALSE.                    & bool                   & -                                  & \ref{calibration}                    \\
+WSMFEFF\_LOW\_MULT                           & 5.08E-03                   & float                  & conversion factor                  & \ref{elliptical_dimensions}          \\
+WX\_BILINEAR\_INTERPOLATION                  & .FALSE.                    & bool                   & -                                  & \ref{surface_fire_spread}            \\
+\multicolumn{5}{c}{WUI}                                                                                                                                                        \\
+\toprule
+BLDG\_AREA\_CONSTANT                         & 20                         & float                  & \cellcolor[HTML]{FF0000}?          & \ref{building_spread}                \\
+BLDG\_SEPARATION\_DIST\_CONSTANT             & 10                         & float                  & \cellcolor[HTML]{FF0000}?          & \ref{building_spread}                \\
+BLDG\_NONBURNABLE\_FRAC\_CONSTANT            & 0                          & float                  & float                              & \ref{building_spread}                \\
+BLDG\_FOOTPRINT\_FRAC\_CONSTANT              & 1                          & float                  & float                              & \ref{building_spread}                \\
+BLDG\_FUEL\_MODEL\_CONSTANT                  & 1                          & integer                & \cellcolor[HTML]{FF0000}?          & \ref{building_spread}                \\
+BLDG\_SPREAD\_MODEL\_TYPE                    & 1                          & integer                & switch                             & \ref{building_spread}                \\
+USE\_BLDG\_SPREAD\_MODEL                     & .FALSE.                    & bool                   & -                                  & \ref{building_spread}                \\
+USE\_CONSTANT\_BLDG\_SPREAD\_MODEL\_PARAMS   & .TRUE.                     & bool                   & -                                  & \ref{building_spread}                \\
+GLOBAL\_HARDENING\_FACTOR                    & 1                          & float                  & float                              & \ref{ember_ignition}                 \\
+\multicolumn{5}{c}{SPOTTING}                                                                                                                                                   \\
+\toprule
+CRITICAL\_SPOTTING\_FIRELINE\_INTENSITY(:)   & 0                          & float                  & \cellcolor[HTML]{FF0000}?          & \ref{ember_generation}               \\
+CROWN\_FIRE\_SPOTTING\_PERCENT               & 100                        & float                  & \%                                 & \ref{ember_generation}               \\
+CROWN\_FIRE\_SPOTTING\_PERCENT\_MAX          & 100                        & float                  & \%                                 & \ref{stochastic_spotting}            \\
+CROWN\_FIRE\_SPOTTING\_PERCENT\_MIN          & 100                        & float                  & \%                                 & \ref{stochastic_spotting}            \\
+EMBER\_GR                                    & 1.00E-03                   & float                  & \cellcolor[HTML]{FF0000}?          & \ref{ember_generation}               \\
+EMBER\_SAMPLING\_FACTOR                      & 1                          & float                  & scale factor                       & \ref{ember_generation}               \\
+ENABLE\_SPOTTING                             & .FALSE.                    & bool                   & -                                  & \ref{spotting}                       \\
+ENABLE\_SURFACE\_FIRE\_SPOTTING              & .FALSE.                    & bool                   & -                                  & \ref{ember_generation}               \\
+GLOBAL\_SURFACE\_FIRE\_SPOTTING\_PERCENT     & 0                          & float                  & \%                                 & \ref{ember_generation}               \\
+GLOBAL\_SURFACE\_FIRE\_SPOTTING\_PERCENT\_MAX & 0                         & float                  & \%                                 & \ref{stochastic_spotting}            \\
+GLOBAL\_SURFACE\_FIRE\_SPOTTING\_PERCENT\_MIN & 0                         & float                  & \%                                 & \ref{stochastic_spotting}            \\
+MAX\_SPOTTING\_DISTANCE                      & 0                          & float                  & meters                             & \ref{ember_transport}                \\
+MEAN\_SPOTTING\_DIST                         & 0                          & float                  & meters                             & \ref{ember_transport}                \\
+MEAN\_SPOTTING\_DIST\_MAX                    & 0                          & float                  & meters                             & \ref{stochastic_spotting}            \\
+MEAN\_SPOTTING\_DIST\_MIN                    & 0                          & float                  & meters                             & \ref{stochastic_spotting}            \\
+MIN\_SPOTTING\_DISTANCE                      & 0                          & float                  & meters                             & \ref{ember_transport}                \\
+NEMBERS\_MAX                                 & 1                          & integer                & firebrands                         & \ref{ember_generation}               \\
+NEMBERS\_MAX\_HI                             & 1                          & integer                & firebrands                         & \ref{stochastic_spotting}            \\
+NEMBERS\_MAX\_LO                             & 1                          & integer                & firebrands                         & \ref{stochastic_spotting}            \\
+NEMBERS\_MIN                                 & 30                         & integer                & firebrands                         & \ref{ember_generation}               \\
+NEMBERS\_MIN\_HI                             & 0                          & integer                & firebrands                         & \ref{stochastic_spotting}            \\
+NEMBERS\_MIN\_LO                             & 0                          & integer                & firebrands                         & \ref{stochastic_spotting}            \\
+NORMALIZED\_SPOTTING\_DIST\_VARIANCE         & 0                          & float                  & meters                             & \ref{ember_transport}                \\
+NORMALIZED\_SPOTTING\_DIST\_VARIANCE\_MAX    & 0                          & float                  & meters                             & \ref{stochastic_spotting}            \\
+NORMALIZED\_SPOTTING\_DIST\_VARIANCE\_MIN    & 0                          & float                  & meters                             & \ref{stochastic_spotting}            \\
+PIGN                                         & 1                          & float                  & \%                                 & \ref{ember_ignition}                 \\
+PIGN\_MAX                                    & 1                          & float                  & \%                                 & \ref{stochastic_spotting}            \\
+PIGN\_MIN                                    & 1                          & float                  & \%                                 & \ref{stochastic_spotting}            \\
+LOCAL\_IGNITION\_TIME                        & 30                         & float                  & seconds                            & \ref{ember_ignition}                 \\
+CELL\_IGNITION\_DELAY                        & 100                        & float                  & seconds                            & \ref{ember_ignition}                 \\
+SOURCE\_FUEL\_IGN\_MULT(:)                   & 1                          & float                  & scale factor                       & \ref{ember_ignition}                 \\
+SPOTTING\_DISTRIBUTION\_TYPE                 & 'LOGNORMAL'                & string                 & Categorical                        & \ref{ember_transport}                \\
+SPOT\_FLIN\_EXP                              & 0.5                        & float                  & exponent                           & \ref{ember_transport}                \\
+SPOT\_FLIN\_EXP\_HI                          & 0.5                        & float                  & exponent                           & \ref{stochastic_spotting}            \\
+SPOT\_FLIN\_EXP\_LO                          & 0.5                        & float                  & exponent                           & \ref{stochastic_spotting}            \\
+SPOT\_WS\_EXP                                & 0.9                        & float                  & exponent                           & \ref{ember_transport}                \\
+SPOT\_WS\_EXP\_HI                            & 0.9                        & float                  & exponent                           & \ref{stochastic_spotting}            \\
+SPOT\_WS\_EXP\_LO                            & 0.9                        & float                  & exponent                           & \ref{stochastic_spotting}            \\
+STOCHASTIC\_SPOTTING                         & .FALSE.                    & bool                   & -                                  & \ref{stochastic_spotting}            \\
+SURFACE\_FIRE\_SPOTTING\_PERCENT(:)          & 100                        & float                  & \%                                 & \ref{ember_generation}               \\
+SURFACE\_FIRE\_SPOTTING\_PERCENT\_MULT(:)    & 1                          & float                  & scale factor                       & \ref{ember_ignition}                 \\
+TAU\_EMBERGEN                                & 6                          & float                  & seconds                            & \ref{ember_generation}               \\
+USE\_UMD\_SPOTTING\_MODEL                    & .FALSE.                    & bool                   & -                                  & \ref{ember_generation}               \\
+P\_EPS                                       & 0.01                       & float                  & PDF upper bound                    & \ref{ember_transport}                \\
+USE\_EULERIAN\_SPOTTING                      & .FALSE.                    & bool                   & -                                  & \ref{ember_ignition}                 \\
+USE\_PHYSICAL\_SPOTTING\_DURATION            & .FALSE.                    & bool                   & -                                  & \ref{ember_generation}               \\
+USE\_PHYSICAL\_EMBER\_NUMBER                 & .FALSE.                    & bool                   & -                                  & \ref{ember_generation}               \\
+USE\_CUSTOMIZED\_PDF                         & .FALSE.                    & bool                   & -                                  & \ref{ember_transport}                \\
+USE\_SUPERSEDED\_SPOTTING                    & .TRUE.                     & bool                   & -                                  & \ref{spotting}                       \\
+DT\_DUMP\_EMBER\_FLUX                        & 30                         & float                  & seconds                            &                                      \\
+NO\_SURFACE\_FIRE                            & .FALSE.                    & bool                   & -                                  & \ref{spotting}                       \\
+USE\_HALF\_CFL\_DT\_FOR\_SPOTTING            & .FALSE.                    & bool                   & -                                  & \ref{ember_transport}                \\
+BUILD\_EMBER\_FLUX\_TABLE                    & .FALSE.                    & bool                   & -                                  &                                      \\
+USE\_EMBER\_IGNITION\_MODEL                  & .FALSE.                    & bool                   & -                                  & \ref{ember_ignition}                 \\
+USE\_SIMPLE\_IGNITION\_MODEL                 & .TRUE.                     & bool                   & -                                  & \ref{ember_ignition}                 \\
+MU\_CROSSWIND                                & 0                          & float                  & meters                             & \ref{ember_transport}                \\
+SIGMA\_CROSSWIND                             & 0                          & float                  & meters                             & \ref{ember_transport}                \\
+MU\_DOWNWIND                                 & 0                          & float                  & meters                             & \ref{ember_transport}                \\
+SIGMA\_DOWNWIND                              & 0                          & float                  & meters                             & \ref{ember_transport}                \\
+EMBER\_GR\_PER\_MW\_BLDG                     & 10                         & float                  & float                              & \ref{ember_generation}               \\
+EMBER\_GR\_PER\_MW\_VEGE                     & 33.3                       & float                  & float                              & \ref{ember_generation}               \\
+DIFF\_WILDLAND\_IGNITION                     & .FALSE.                    & bool                   & -                                  & \ref{ember_ignition}                 \\
+\multicolumn{5}{c}{SUPPRESSION}                                                                                                                                                \\
+\toprule
+B\_SDI                                       & 1                          & float                  & scale factor                       & \ref{suppression}                    \\
+DT\_EXTENDED\_ATTACK                         & 3600                       & float                  & seconds                            & \ref{suppression}                    \\
+ENABLE\_EXTENDED\_ATTACK                     & .FALSE.                    & bool                   & -                                  & \ref{suppression}                    \\
+ENABLE\_INITIAL\_ATTACK                      & .FALSE.                    & bool                   & -                                  & \ref{suppression}                    \\
+AREA\_NO\_CONTAINMENT\_CHANGE                & 10000                      & float                  & acres per DT                       & \ref{suppression}                    \\
+INITIAL\_ATTACK\_TIME                        & 1800                       & float                  & seconds                            & \ref{suppression}                    \\
+MAX\_CONTAINMENT\_PER\_DAY                   & 100                        & float                  & \%                                 & \ref{suppression}                    \\
+SDI\_FACTOR                                  & 1                          & float                  & scale factor                       & \ref{suppression}                    \\
+USE\_SDI                                     & .FALSE.                    & bool                   & -                                  & \ref{suppression}                    \\
+USE\_SDI\_LOG\_FUNCTION                      & .FALSE.                    & bool                   & -                                  & \ref{suppression}                    \\
+\multicolumn{5}{c}{CALIBRATION}                                                                                                                                                \\
+\toprule
+ADJUSTMENT\_FACTORS\_BY\_PYROME              & .FALSE.                    & bool                   & -                                  & \ref{calibration}                    \\
+ADJUSTMENT\_FACTORS\_FILENAME                & ""                         & string                 & file                               & \ref{calibration}                    \\
+CALIBRATION\_CONSTANTS\_BY\_PYROME           & .FALSE.                    & bool                   &                                    & \ref{calibration}                    \\
+CALIBRATION\_CONSTANTS\_FILENAME             & ""                         & string                 & file                               & \ref{calibration}                    \\
+DURATION\_MAX\_DAYS                          & 28                         & integer                & days                               & \ref{calibration}                    \\
+DURATION\_PDF\_BY\_PYROME                    & .FALSE.                    & bool                   & -                                  & \ref{calibration}                    \\
+DURATION\_PDF\_FILENAME                      & ""                         & string                 & file                               & \ref{calibration}                    \\
+\end{longtable}
+\end{center}
+\end{landscape}

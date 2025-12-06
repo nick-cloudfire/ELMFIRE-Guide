@@ -1,0 +1,1119 @@
+\section{Introduction}
+
+
+\section{Wildfire Spread}
+
+The foundation of ELMFIRE is the Rothermel model, which estimates the head fire rate of spread in the direction of the wind and slope combined. An extensive and thorough guide has been compiled by Andrews (2018) covering all the aspects of the model, the input parameters, experimental background and corellations between values. For completeness, and consistency of units used in ELMFIRE, critical parts of the model will be repeated in this section. 
+
+The Rothermel model, at a high level, outlines the rate of spread of a wildfire as an energy argument, specifically as the ratio of the energy produced by the fire front and the energy required for ignition. Rigorously, it is:
+
+\begin{equation}
+    R=\frac{I_R\xi(1+\phi_w+\phi_s)}{\rho_b\epsilon Q_{ig}}
+\end{equation}
+
+In general terms, the numerator is the propagating flux, and the denominator is the heat required to ignite the next parcel of fuel. Analytically:
+
+\begin{itemize}
+    \item $R$: Rate of Spread (ft/min): 1D velocity of the flaming front aligned with prevailing wind and slope.
+    \item $I_R$: Reaction Intensity $(BTU/ft^2/min)$, energy released per unit area of fire front.
+    \item $\xi$: Propagating Flux Ratio, fraction of released energy that reaches unburned fuel under no wind/slope.
+    \item $\phi_w$: Wind Factor, dimensionless factor accounting for the effect of wind on the rate of spread. 
+    \item $\phi_s$: Slope Factor, dimensionless factor accounting for the effect of slope on the rate of spread. 
+    \item $\rho_b$ Fuel Bulk Density ($lb/ft^3$), oven-dry density of surface fuel.
+    \item $\epsilon$: Effective Heating Number: Ratio of unburned fuel reaching ignition temperature before ignition.
+    \item $Q_{ig}$: Heat of Preignition ($BTU/lb$): Energy required to ignite 1 lb of fuel. 
+\end{itemize}
+
+Of the above values, almost none are material values and they all need to be calculated through further equations and correlations. ELMFIRE makes no modifications to the Rothermel model as outlined in Andrews (2018). Note that english units are used in the original model formulation, but metric equivalent equations have been developed.
+
+From the above formulation of the Rothermel equation it may seem that the wind and slope must be aligned, and are then linearly added to the no-wind, no-slope rate of spread. Most of the times, the direction of maximum slope and the wind direction will not be matching, and need to go through vector addition instead. To do this, we can rewrite the Rothermel model as:
+
+\begin{equation}
+    R=V_{s,0}\alpha(1+ \| \vec{\phi_w}+\vec{\phi_s} \| ) =V_{s,0}\alpha(1+ \| \vec{\phi} \| )  
+\end{equation}
+
+where $V_{s,0}$ is the no-wind, no-slope rate of spread estimated by the Rothermel model, and $\alpha$ is a constant added by ELMFIRE to account for point source acceleration (only relevant in the early stages of the fire) such that $0 \leq \alpha \leq 1$. By assuming that the directional effects of wind and slope are independent, $\phi_x$ and $\phi_y$ (the $x$ and $y$ components of an “overall” $\vec{\phi}$) can be calculated with:
+
+\[
+\phi_{x} = \alpha(\phi_{w,x} + \phi_{s,x})
+         = \alpha\!\left[\phi_{w} \sin(\theta_{w}-\pi) + 
+                         \phi_{s} \sin(\theta_{a}-\pi)\right]
+\]
+
+\[
+\phi_{y} = \alpha(\phi_{w,y} + \phi_{s,y})
+         = \alpha\!\left[\phi_{w} \cos(\theta_{w}-\pi) + 
+                         \phi_{s} \cos(\theta_{a}-\pi)\right]
+\]
+
+Then, by adding the constituents of the vector, 
+
+\[
+|\vec{\phi}| = \sqrt{\phi_{x}^{2} + \phi_{y}^{2}}
+\]
+
+Finally, the direction of maximum spread (the direction toward which the fire spreads most rapidly, i.e. the head fire direction) is calculated as:
+
+\[
+\theta_{DMS} =
+\begin{cases}
+\frac{\pi}{2} - \tan^{-1}\!\left(\dfrac{\phi_{y}}{\phi_{x}}\right),
+    & \phi_{x} > 0 \;\text{and}\; \phi_{y} \ge 0 \\[1em]
+
+\frac{3\pi}{2} - \tan^{-1}\!\left(\dfrac{\phi_{y}}{\phi_{x}}\right),
+    & \phi_{x} < 0 \;\text{and}\; \phi_{y} \ge 0 \\[1em]
+
+\frac{3\pi}{2} - \tan^{-1}\!\left(\dfrac{\phi_{y}}{\phi_{x}}\right),
+    & \phi_{x} < 0 \;\text{and}\; \phi_{y} < 0 \\[1em]
+
+\frac{\pi}{2} - \tan^{-1}\!\left(\dfrac{\phi_{y}}{\phi_{x}}\right),
+    & \phi_{x} > 0 \;\text{and}\; \phi_{y} < 0
+\end{cases}
+\]
+
+An effective midflame windspeed can then be calculated to represent the combined effect of wind and slope as one effective wind value. Effective mid-flame wind speed is calculated by solving Equation 47 from Rothermel (1972) based on the 20ft wind speed and slope inputs, vector added to the parameter $\phi$:
+
+\begin{equation}
+U_{m,f,e} = 
+\left(
+\frac{\,|\phi|\,}{C \left( \frac{\beta}{\beta_{op}} \right)^{-E}}
+\right)^{\frac{1}{B}}
+\end{equation}
+
+The parameters $C$, $\beta$, $\beta_{op}$, $E$, and $B$ are defined in Rothermel (1972) and depend on the fuel model.
+
+\subsection{Wind Scaling}
+
+As might have been hinted at in the previous section, the wind factor in the rothermel equation depends on the midflame windspeed, that is the wind at the height of the flames. Most weather stations and weather measurements in the world require wind be measured at some height above ground, to capture ``free wind velocity'' and avoid ground effects. In the US, that height is 20ft, while in other parts of the world it is 10m. 
+
+ELMFIRE as standard expects wind inputs in mph and at 20ft height. Readings at 10m height are also acceptable, and are internally converted to 20ft readings by multiplying them by a constant 0.87. Then the wind needs to be scaled again to be brought down to midflame height. This final scaling depends on the flame length, which is assumed to be equal to the fuel bed depth. It also depends on the existence of canopy, as it would further reduce the midflame wind speed. For unsheldered surface fires (in the case of ELMFIRE, cases with canopy cover percentage of 0), the following conversion is used:
+
+\begin{equation}
+    U_{mf} = U_{20}\frac{1.83}{\ln\left(\frac{20+0.36H}{0.13H}\right)}
+\end{equation}
+
+For sheltered surface fires:
+
+\begin{equation}
+    U_{mf} = U_{20}\frac{0.555}{\sqrt{fH}\ln\left(\frac{20+0.36H}{0.13H}\right)}
+\end{equation}
+
+Where:
+
+\begin{itemize}
+    \item $H$: Fuel bed depth (ft)
+    \item $f=\frac{CC}{100}\frac{\pi}{12}$
+    \item $CC$: Canopy Cover (\%)
+\end{itemize}
+
+This midflame windspeed can then be used to calculate the wind adjustment factor. 
+
+\subsection{Directional Rate of Spread}
+
+The Rothermel model provides the head fire rate of spread; the spread rate at any angle from the head fire is needed for landscape spread calculations. ELMFIRE implements the elliptical wildfire propagation proposed by Anderson (1983) and later modified by Finney. This theory suggests that wildfire spread from a point source can be described by an ellipse, following from experimental observation and a balance for ease of mathematical description. The equations describing the dimensions of the ellipse ultimately can be solved to find the rate of spread about any angle $\omega$ from the maximum spread direction. The dimensions of the ellipse are dictated by the following equation, describing the Length/Width ratio of the ellipse based on the effective midflame windspeed in mph $U_{mf,e}$:
+
+\begin{equation}
+    \frac{L}{W} = \min \left[ 
+0.936\, e^{0.2566\, U_{mf,e}} 
++ 0.461\, e^{-0.1548\, U_{mf,e}} 
+- 0.397,\; 8
+\right]
+\end{equation}
+
+As in FARSITE, the maximum value of L/W is limited to 8 by default but in ELMFIRE this is a user-specifiable parameter. ELMFIRE computes this equation directly, compared to older versions of the code that used polynomial approximations.
+
+The equations below show how the rate of spread is calculated, with $V_{DMS,\parallel}$ being the rate of spread at direction of maximum spread parallel to the ground, $V_{s0}$ being the backing rate of spread assumed equal to the no-wind/no-slope spread rate, and $\omega$ being the angle from the maximum spread direction.
+
+\begin{align}
+U^{*}_{y,\parallel} &= 
+\frac{a^{2}\cos(\omega)}{\sqrt{a^{2}\cos^{2}(\omega) + b^{2}\sin^{2}(\omega)}} + c \\[1em]
+U^{*}_{x,\parallel} &=
+\frac{b^{2}\sin(\omega)}{\sqrt{a^{2}\cos^{2}(\omega) + b^{2}\sin^{2}(\omega)}} \\[1em]
+a &= \frac{1}{2}\left( \left| V_{DMS,\parallel} \right| + V_{s0} \right) \\[0.5em]
+b &= \frac{1}{2} \left| V_{DMS,\parallel} \right| + V_{s0} \frac{L}{W} \\[0.5em]
+c &= \frac{1}{2}\left( \left| V_{DMS,\parallel} \right| - V_{s0} \right)
+\end{align}
+
+\subsection{Canopy Fires}
+
+The criterion for a canopy fire starting is the critical fireline intensity of the surface fire, $I_0$,depends on the height of the crown base (CBH, m) and the canopy foliar moisture content (M, \%), following Van Wagner's model (1989) and the adjustments from Cruz et al (2005). It is calculated by:
+
+\begin{equation*}
+    I_0 = \left[0.010 CBH (460+25.9M)\right]^{3/2}
+\end{equation*}
+
+Then the ``intensity'' of the crown fire is dictated by another value, the critical minimum rate of spread for active canopy fire, $R_0$, calculated through the Crown Bulk Density, $kg m^{-3}$:
+
+\begin{equation*}
+    R_0 = 3.0/CBD
+\end{equation*}
+
+And the predicted rate of spread of the canopy fire, $R_{C,P}$ can be calculated using the CBD, 10m wind in kph (note the unit and reference height change), and $M_1$ being the 1-hour fuel moisture content of the surface fuel. Due to its direct dependence on wind, this model is not applicable for zero-wind conditions, which would only be encountered in idealized conditions. hence this case will be run similarly to the ``Windy'' case. 
+
+\begin{equation*}
+    R_{C,P} = 11.02\times U_{10}^{0.9}\times CBD^{0.19}\times \exp(-0.17\times 100\times M_1)
+\end{equation*}
+
+The combination of the two values can be used to determine if and what kind of crown fire occurs, depending on the surface fire fireline intensity $I_b$:
+
+\begin{enumerate}
+    \item Passive Crown Fire ($Ib \geq Io$ but $R_{C,P}/R_0<=1$)
+    \item Active Crown Fire ($Ib \geq Io$, $R_{C,P}/R_0>1$)
+    \item Independent Crown Fire ($Ib>Io$, $R_{C,P}/R_0>1$)
+\end{enumerate}
+
+Then, if the fire is determined to be a passive crown fire, its rate of spread will be adjusted to:
+
+\begin{equation*}
+    R_C=R_{C,P}\times \exp{\left(-\frac{R_C}{R_0}\right)}
+\end{equation*}
+
+For an active crown fire, the following equation is used, as long as the canopy cover of that point in the landscape exceeds the critical canopy cover (set by default as 0.39):
+
+\begin{equation*}
+    R_C=R_{C,P}
+\end{equation*}
+
+The calculated rate of spread of the canopy fire, whether passive or active, is then converted to an effective wind factor, to directly affect the calculated surface rate of spread. This way ELMFIRE can directly use the surface spread model to also include crown fire acceleration effects. The new effective wind factor $\phi_{w,e}$ is the maximum value between the Rothermel wind factor, $\phi_{w,R}$, and the Cruz canopy wind factor $\phi_{w,C}$, calculated by:
+
+\begin{equation*}
+    \phi_{w,C} = \frac{R_C}{R_{R,0}}-1
+\end{equation*}
+
+With ${R_{R,0}}$ being the no wind, no slope Rothermel predicted surface rate of spread. The calculation is then repeated to find the modified, surface-canopy coupled rate of spread. 
+
+\subsection{Level Set Propagation}
+
+At this stage the head rate of spread, the direction of primary spread, the rate of spread about any direction and canopy effects have been quantified. ELMFIRE can now use the level set method to spread the wildfire about a 2d landscape. The level set method is a common mathematical concept used to solve differential equations, find local maxima or minima, or solve for a specific variable. In this case, ELMFIRE restructures the problem of fire spread across a landscape as a differential equation, solving for time. The exact formulation is:
+
+\[
+\frac{\partial \phi}{\partial t}
++ U_x \frac{\partial \phi}{\partial x}
++ U_y \frac{\partial \phi}{\partial y}
+= 0
+\]
+
+$\phi$ has no physical meaning except that the $\phi = 0$ isopleth (or level set) 
+corresponds to the fire front. This provides a convenient way to track a curved surface, such as a fire front, on a regular grid. ELMFIRE integrates the governing PDE using a narrow-band formulation (Sethian, 1996) with a second-order Runge--Kutta method and superbee flux limiters to prevent numerical oscillations.
+
+In a previous step we had derived the values $U^{*}_{y,\parallel}$ and $U^{*}_{x,\parallel}$. Those are the y- and x-directions rate of spread about the rothermel-calculated main spread direction, parallel to the ground. To use them in the level set method, they first have to be realigned about the main coordinate grid, and then projected flat. As such, the orthogonal rate of spread components can be calculated by:
+
+\[
+U_{x,\parallel} = U^{*}_{y,\parallel}\,\sin(\theta_{DMS})
+                 + U^{*}_{x,\parallel}\,\cos(\theta_{DMS})
+\]
+
+\[
+U_{y,\parallel} = U^{*}_{y,\parallel}\,\cos(\theta_{DMS})
+                 - U^{*}_{x,\parallel}\,\sin(\theta_{DMS})
+\]
+
+And then to correct for slope:
+
+\[
+\frac{U_{x}}{U_{x,\parallel}} 
+= 1 - \left| \sin(\theta_{a}) \right|\,(1 - \cos(\gamma))
+\]
+
+\[
+\frac{U_{y}}{U_{y,\parallel}} 
+= 1 - \left| \cos(\theta_{a}) \right|\,(1 - \cos(\gamma))
+\]
+
+With $\theta_\alpha$ being the topographical aspect, and $\gamma$ being the topographical slope. This correction has the correct limiting behavior, firstly resulting in 1 in flat terrain. Now take the case of an east-facing slope ($\theta_a = \pi/2$). Since $\sin(\pi/2) = 1$, $U_x / U_{x,\parallel} = \cos(\gamma)$.
+However, the $y$-direction spread rate is unaffected since $\cos(\pi/2) = 0$
+and $U_y / U_{y,\parallel} = 1$.
+
+The fire front can propagate only normal to itself. A key part of calculating the spread rate along the fire front is the normal vector to the $\phi$ field, representing the direction of spred of the fire front:
+
+\[
+\hat{n}
+= \frac{1}{|\nabla \phi|}
+\left(
+\frac{\partial \phi}{\partial x}\,\hat{i}
++
+\frac{\partial \phi}{\partial y}\,\hat{j}
+\right)
+= n_x \hat{i} + n_y \hat{j}
+\]
+
+\[
+|\nabla \phi|
+= \sqrt{
+\left( \frac{\partial \phi}{\partial x} \right)^2
++
+\left( \frac{\partial \phi}{\partial y} \right)^2
+}
+\]
+
+Now we can define $\theta_n$ as the angle to which the $\phi$ field normal vector points about our reference grid system:
+
+\[
+\theta_n =
+\begin{cases}
+\frac{\pi}{2} - \tan^{-1}\!\left(\dfrac{n_y}{n_x}\right),
+    & n_x \ge 0,\; n_y \ge 0 \\[1em]
+
+\frac{3\pi}{2} - \tan^{-1}\!\left(\dfrac{n_y}{n_x}\right),
+    & n_x \le 0,\; n_y \ge 0 \\[1em]
+
+\frac{3\pi}{2} - \tan^{-1}\!\left(\dfrac{n_y}{n_x}\right),
+    & n_x \le 0,\; n_y \le 0 \\[1em]
+
+\frac{\pi}{2} - \tan^{-1}\!\left(\dfrac{|n_y|}{n_x}\right),
+    & n_x \ge 0,\; n_y \le 0
+\end{cases}
+\]
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.25\linewidth]{figs/theta_explanation.png}
+    \caption{Graphical illustration of $\theta$, the angle normal to fire front measured clockwise from North,at several locations along a sample fire perimeter.}
+    \label{fig:placeholder}
+\end{figure}
+
+
+The steps in solving the ODE are given in good detail in Rehm and McDermott (2009), and they will be repeated here based on their explanation. At any time step $t_n$ the gradient of $\phi$ can be calculated by central differentiation at each direction:
+
+\[
+\left( \frac{\delta \phi}{\delta x} \right)^{n}_{i,j}
+= 
+\frac{\phi^{n}_{i+1,j} - \phi^{n}_{i-1,j}}{2\,\Delta x},
+\]
+
+\[
+\left( \frac{\delta \phi}{\delta y} \right)^{n}_{i,j}
+=
+\frac{\phi^{n}_{i,j+1} - \phi^{n}_{i,j-1}}{2\,\Delta y}.
+\]
+
+From these we can find the normal vector $\hat{n}$, and the angle $\theta_n$ of fire front spread. $U_x$ and $U_y$ can then be found by setting $\omega=\theta_{DMS}-\theta_n$. Before doing so, we set a flux limit to stabilise the ODE solver.
+
+The central differentiation scheme used above can be reframed, using the $\phi$ values at the faces of the cell, in the example below the east and west face, instead of the centers of the adjacent cells:
+
+\[
+\frac{\delta \phi}{\delta x} = \frac{\phi_{east}-\phi_{west}}{\Delta x}
+\]
+
+We then define the local data ratio:
+
+\[
+r=\frac{\phi_{i+1,j} - \phi_{i,j}}{\phi_{i,j}-\phi_{i-1,j}}
+\]
+
+And the flux limiter function (Superbee):
+
+\[
+B(r) = max[0, min(2r,1),min(r,2)]
+\]
+
+The flux limiter can then be applied directly to the face values, such as:
+
+\[
+\phi_{east} = \phi_{i,j}+\frac{1}{2}B(\phi_{i+1,j}-\phi_{i,j})
+\]
+
+The rest of the face $\phi$ values can be computed similarly, based on the cell center $\phi$ values, and the original gradients of the ODE can be solved once again. 
+
+To integrate the ODE through time, the second order RK scheme is used. The time step $\Delta t$ is controlled by the CFL criterion, set as standard as 0.2 but modifiable by the user. The mathematical formulation used in ELMFIRE is given below:
+
+\begin{align}
+\phi^{*} 
+&= \phi^{t}
+   - \Delta t \left(
+        U_{x}^{t} \frac{\phi^{t}_{\text{east}} - \phi^{t}_{\text{west}}}{\Delta x}
+      + U_{y}^{t} \frac{\phi^{t}_{\text{north}} - \phi^{t}_{\text{south}}}{\Delta y}
+     \right)
+\tag{10a}
+\\[1em]
+\phi^{t+\Delta t}
+&= \tfrac{1}{2}\phi^{t}
+   + \tfrac{1}{2}\left(
+        \phi^{*}
+        - \Delta t \left(
+              U_{x}^{*} \frac{\phi^{*}_{\text{east}} - \phi^{*}_{\text{west}}}{\Delta x}
+            + U_{y}^{*} \frac{\phi^{*}_{\text{north}} - \phi^{*}_{\text{south}}}{\Delta y}
+        \right)
+     \right)
+\tag{10b}
+\end{align}
+
+And thus, each time step a new $\phi$ is calculated and the fire front is allowed to progress. For the first time step, ignition is dictated by the points where $\phi=1$.
+
+\subsection{Acceleration}
+
+The Rothermel model described above provides the equilibrium rate of surface fire spread, but in reality this equilibrium rate of spread is not achieved instantaneously. Consequently, for initial ignition locations and spot fires that form during a simulation, the rate of spread increases from zero to the equilibrium spread rate as follows:
+
+\[
+\frac{R_{ac}}{R}
+= 1 - \exp\!\left( -\,\frac{t - t_{\mathrm{ign}}}{\tau_{\mathrm{accel}}} \right)
+\]
+
+where $T_{ign}$ is the time (s) that a point is ignited (by the initial conditions or by a spot fire, and $\tau_{\mathrm{accel}}$ is a user specified acceleration time constant (s), usually on the order of 600.
+
+\section{Spotting}
+
+The process of a spot fire being created (generation, transport, ignition) can be broken up to its constituate processes, and each one can be studied separately. Much of the firebrand model in ELMFIRE is taken from the thesis of Yiren Qui from the University of Maryland, and will in large parts be reproduced below for completeness.
+
+\subsection{Generation}
+
+In ELMFIRE, generation of firebrands can be calculated in three ways. It can either be directly prescribed with maximum and minimum limits, calculated simply using a value for embers generated per square meter per second, or it can be calculated semi-empirically based on the wildfire power. The latter two methods are part of the UMD spotting model.
+
+To calculate the ember number using the simplest model offered in ELMFIRE, the maximum $N_M$ and minimum $N_m$ number of firebrands per cell needs to be specified. Then a random number of firebrands $N$, between and including $N_M$ and $N_m$ is specified for each cell. 
+
+The simple model using an ember generation factor is:
+
+\[
+N=G_t A_c \Delta t
+\]
+
+Where $N$ is the number of firebrands generated in that timestep, $G_t$ represents embers generated per square meter per second, $A_c$ is the area of the cell ($=c^2$, $c$ is cell size), and $\Delta t$ is the minimum of the simulation timestep and the ember generation burning time $t_g$. This gives a total number of embers that are generated by one burning simulation cell. 
+
+The physical model is:
+
+\[
+N = 0.001 I_b \: c \: G \:\Delta t
+\]
+
+Where $I_b$ is the fireline intensity in $kW/m$, c is cell size in m, G is the ember generation per mw factor, describing how many embers are generated per mw of fire front. This is experimentally found to equal 33.3 for vegetated fuels and 10 for building fuels, though these values can be modified by the user. $\Delta t$ is the simulation timestep (not $t_g$ from above).
+
+No matter if method 2 or 3 is used, the resulting firebrand number $N$ is then divided by the ember sampling factor (set as 1 by default) to adjust based on experimental results or to ease computational load. IF the result of the above calculation is a float, it is rounded randomly to the nearest high or low integer (with a rounding probability equal to the floating part). 
+
+\subsection{Trajectory}
+
+For each of the embers generated in the previous step, they are set to travel a varying distance downwind. The generated firebrands travel from their generation spot to their determined landing distance while being affected by the temporally and spatially varying wind, depending on when and where they are along their trajectory. When between two timesteps, the weather values are linearly interpolated. A spotting distance is first calculated probabilistically, and then each firebrand is marched along time until it reaches its deposition location, with timesteps much finer than the level set timesteps. This allows a nonuniform wind field to accelerate or decelerate the downwind speed of the firebrand. In each firebrand timestep, both the X and Y coordinates of the firebrand are affected, depending on the wind magnitude on the cell it is in. Here an additional probabilistic term is added (-4 to 4) to the wind direction to model the effects of turbulence around the particle. This movement is split in two steps, one for the windward shift and one for the spanwise shifts. 
+
+As of right now, ELMFIRE has three methods of estimating the spotting distance, namely Uniform, Logarithmic, and UMD (Sardoy).
+
+Uniform uses directly prescribed minimum and maximum spotting distance, and assumes a uniform distribution. The spotting distance is then set as a random interval between, and including, the maximum and minimum spotting distance.
+
+Lognormal uses a lognormal distribution to determine the probability of a firebrand landing at any given downwind location
+The second method to calculate the spotting distance of a single firebrand, $X_L$ is using a random variable $R_o$ ranging from 0 to 1. The mean and standard deviation values for the distance travelled are calculated by:
+
+\[
+\mu_x =\ln\!\left(\frac{\text{MSD}^{2}}{\sqrt{\text{MSD}\,v+ \text{MSD}^{2}}}\right),
+\]
+
+\[
+\sigma_x=\sqrt{\ln\!\left(1+\frac{\text{MSD}\,v}{\text{MSD}^{2}}\right)}.
+\]
+
+Where $v$ is the normalised spotting distance variance (user specified) and:
+
+\[
+\text{MSD}= \overline{x} I_b^{0.5}U_{20}^{0.9}
+\]
+
+Where $\overline{x}$ is the mean spotting distance (m) (user specified), $I_b$ is the fireline intensity, and $U_{20}$ is the 20ft wind speed. The 0.5 and 0.9 parameters are empirical and can be adjusted by the user. 
+
+Then, the travel distance of the particle is determined through a random number $0 \le R_o \le 1$.
+
+\[
+X_L=\exp\left(\mu_x + \sqrt{2}\sigma_x erf^{-1}\left[|(2R_o-1)|\right]\right)
+\]
+
+Here, $erf^{-1}$ is the inverse error function. In ELMFIRE it is calculated as a 6th order polynomial for small values of $R_o$ or a Winitzki analytical approximation for large values of $R_o$, balancing accuracy and processing speed. 
+
+UMD (Sardoy) is similar to Lognormal but relies on a probability function specifically developed by Sardoy et al. This distribution has a peak at $x=0$ and then gradually falls to zero, consistent with the observed behavior of short-range firebrands, the ones most likely to cause downwind ignition. The distribution is repeated below:
+
+\[
+pdf{S_X}(X)
+= 
+\frac{1}{X \, \sigma_x \sqrt{2\pi}}
+\exp\!\left[
+ -\,\frac{(\ln X - \mu_x)^{2}}{2\sigma_x^{2}}
+\right]
+\]
+
+Where $X$ is the downwind distance from the firebrand origin, $\mu_x$ and $\sigma_x$ are the mean and standard deviation of the natural logarithm of $X$. The parameters $\mu_x$ and $\sigma_x$ are calculated depending on the Froude number $Fr$, a ratio of inertial and gravitational forces acting on the firebrand (assumed to be a spherical shape). 
+
+\[
+Fr = \frac{U_{\text{10}}}{\sqrt{g\,L_{c}}}, 
+\qquad
+L_{c} = \left( 
+\frac{1000 \times I_{b}}
+     {\rho_{\infty} c_{p,g} T_{\infty} \sqrt{g}}
+\right)^{2/3}
+\]
+
+Where $U_{10}$ is the 10-m wind speed in $ms^-1$ (note the unit shift from the weather input parameters), $g=9.81$ is the gravitational constant, $L_c$ is the firebrand characteristic length, $I_b$ is the fireline intensity, $\rho_\infty=1.1 kg\:m^{-3}$ is air density, $c_{p,g}=1.0 \: kJ\:kg^{-1}K^{-1}$ is the specific heat capacity of air, and $T_\infty = 300K$ is the ambient air temperature. 
+
+The $\mu_x$ and $\sigma_x$ values can then be calculated for the trajectory PDF. 
+
+If $Fr \le 1$:
+
+\[
+\mu_x = 1.47 \cdot I_{b}^{0.54} \cdot U_{\text{10}}^{-0.55} + 1.14,
+\]
+
+\[
+\sigma_x = 0.86 \cdot I_{b}^{-0.21} \cdot U_{\text{10}}^{0.44} + 0.19.
+\]
+
+
+If $Fr > 1$:
+
+\[
+\mu_x = 1.32 \cdot I_{b}^{0.26} \cdot U_{\text{10}}^{0.11} - 0.02,
+\]
+
+\[
+\sigma_x = 4.95 \cdot I_{b}^{-0.01} \cdot U_{\text{10}}^{-0.02} - 3.48.
+\]
+
+The above values can be used to find the downwind distribution of embers. For the crosswind distribution of embers, a spanwise deviation from the centerline is calculated using the same function is used, with $\mu_y$ and $\sigma_y$ replacing their respective X values. Here, $\mu_y=0$ and $\sigma_y = 0.92 * L_C$.
+
+Instead of explicitly prescribing an upper and lower landing bound, the probability density function is discretized in bins and solved computationally based on a higher and lower value. The lower value of windward span is 0 (or a value close to zero). The maximum value is defined by a prescribed value of a percentile of the PDF. This value, $P_{EPS}=0.001$ as standard, will be used to return the $X_M$ value corresponding to a Sardoy PDF value of 99.9.
+
+\[
+X_M=\exp\left(\mu_x + \sqrt{2}\sigma_x erf^{-1}\left[|(2P_{EPS}-1)|\right]\right)
+\]
+
+The equivalent $x$ values to 0, $S_L$ and $X_M$, $S_H$ are found using the inverse PDF function:
+
+\[
+S = \tfrac{1}{2}\left[
+1 + \operatorname{erf}\!\left(
+\frac{\ln X - \mu_x}
+{\sqrt{2}\,\sigma_x}\right)\right].
+\]
+
+With the above (note that $10^{-6}$ is used instead of zero to make sure the natural log does not go undefined), 
+
+\[
+S_L = \tfrac{1}{2}\left[
+1 + \operatorname{erf}\!\left(
+\frac{\ln 10^{-6} - \mu_x}
+{\sqrt{2}\,\sigma_x}\right)\right].
+\]
+
+and
+
+\[
+S_H = \tfrac{1}{2}\left[
+1 + \operatorname{erf}\!\left(
+\frac{\ln (x_M+0.5c)) - \mu_x}
+{\sqrt{2}\,\sigma_x}\right)\right].
+\]
+
+Then, $S_L$ and $S_H$ are used as the upper and lower bounds of the Logarithmic method (with the Sardoy mean and standard deviations), with:
+
+\[
+R_{0,UMD} = R_0 S_L(S_H-S_L)
+\]
+
+The way that particle accumulation, and subsequent ignition, are handled, in the transport stage depends on whether a Lagrangian or Eulerian approach is used. In the Lagrangian method, each landing particle can cause a new spot fire on its own. Each generated firebrand particle is treated independently, with its own randomised movement and landing location. 
+
+\subsubsection{Lagrangian Model}
+
+The lagrangian model calculates a unique, probabilistic landing point for each generated firebrand of each burning cell. As such, while each firebrand originating from the same point will have the same spotting distance, the exact location it lands on will be different because of a probabilistic factor added in to the calculations. In the Lagrangian model, each firebrand that lands has the opportunity to start a new spot fire. 
+
+The Lagrangian model can work with any of the three spotting distance calculation methods described in the previous section. After the windward transport has been calculated, no matter the method, the spanwise distribution is also added, with a similar method as method 2, with $S_S$ being the spanwise inverse error value for a randon number $R_o$, $U_x$ and $U_y$ being the x and y components of $U_{10}$.
+
+\[
+X_t = X_{t-1}
+ \frac{S_S}{U_{10}}\left(\cos\!\left(\frac{\pi}{2}\right)U_x
+      - \sin\!\left(\frac{\pi}{2}\right)U_y\right)
+\]
+
+\[
+Y_t=Y_{t-1}
+\frac{S_S}{U_{10}}\left(\sin\!\left(\frac{\pi}{2}\right)U_x
+      + \cos\!\left(\frac{\pi}{2}\right)U_y\right)
+\]
+
+The probability of ignition of a landed firebrand, once it has reached its spotting distance, $P_i$ is:
+
+\[
+P_i=0.01\:P_{I,0}P_{FM}
+\]
+
+Where $P_{I,0}$ is the baseline ignition probability of firebrands, set 1 as standard, and $P_{FM}$ is the probability of ignition modifier depending on the fuel model the firebrand lands on. As standard, all fuel models have a $P_{FM}$ of 1. These two values mean that if a firebrand lands within the domain, it will ignite. A final check is done before an actual spot fire is initiated, in the case of the UMD spotting model. A 7 x 7 kernel around the landing area is checked to see if any of the points within are within a fire front ($\phi<0$). if any point in that kernel is within a fire front, the landed ember is so close to the burning front that the extra calculations undertaken by ELMFIRE for its ignition are probably not going to have any effect to the overall fire front. 
+
+\subsubsection{Eulerian Model}
+
+The Eulerian model does not track each individual particle. It calculates the landing distance of all firebrands from a cell jointly, and then iterates through time. In the Eulerian model function, the windward ember distribution is still assumed lognormal, and the spanwise distribution is assumed to have a normal distribution with a $\mu_y=0$. Both are solved using method 3 of the Lagrangian model, to get the $X_M$ and $Y_M$ maximum particle travel values. At each firebrand timestep, the embers might land and (possibly) ignite, or they might continue their transport downwind. 
+
+A normalization factor is calculated for both directions, using the Sardoy cumulative density function, for a span between $X_0$ and $X_E$. $CDF_x$ denotes the CDF of the windward direction, with equivalent $\mu$ and $\sigma$ parameters, and $CDF_y$ denotes the CFD function of the spanwise direction. It will be used later in the function.
+
+\[
+CDF_x(X_0,X_E)
+=
+\frac{1}{2}\!\left[
+1 + \operatorname{erf}\!\left(
+\frac{\ln X_0 - \mu_x}
+{\sqrt{2}\,\sigma_x}
+\right)
+\right]
+-
+\frac{1}{2}\!\left[
+1 + \operatorname{erf}\!\left(
+\frac{\ln X_E - \mu_x}
+{\sqrt{2}\,\sigma_x}
+\right)
+\right].
+\]
+
+Then the normalization factors are calculated as (note again the use of $10^{-6}$ instead of 0:
+
+\[
+N_x=CDF_x(10^{-6},X_M)
+\]
+
+\[
+N_y=CDF_y(-Y_M,Y_M)
+\]
+
+At every time step, the probability that a firebrand will land only due to the influence of the windward PDF, $P_L$ is found by:
+
+\[
+P_L=CDL_x(d_t,d_{t-1})
+\]
+
+with $d_t$ being the distance travelled by the particle at time t. Then, the spanwise landing probability is:
+
+\[
+P_{L,s}=CFD_y(-0.5c,0.5c)
+\]
+
+With c being the cell size in m. 
+
+Then, instead of keeping track of each landed firebrand, the number of successfully landed firebrands is accumulated. In this case, the ember flux at that cell and (level set simulation) time step, $F_E$, is:
+
+\[
+F_E=N \: P_L \: P_{L,s}
+\]
+
+With $N$ being the total firebrands generated from the original burning cell. This landing accumulation estimation is repeated across the spanwise range, from $-Y_M$ to $Y_M$. The landing time of all the firebrands is still saved. 
+
+\subsection{Ignition}
+
+Ignition differs between the Lagrangian and Eulerian model results. The Lagrangian model directly assigns ignition probability upon landing, ensuring that new ignition sources will take effect in the next time steps. 
+
+In the Eulerian model, the result is a measure of ember flux for each downwind landscape cell. Another model is needed to determine whether and when a cell will ignite given a specific ember flux. ELMFIRE includes a simple model and a model based on De Beer 2023.
+
+Both models first calculate the number of accumulated embers per unit area for cell $i$ and time $\tau$:
+
+\[
+\hat{N}_i =\frac{1}{c^2}\left[ \sum_{t=1}^{\tau-1} F_{E,i,t} + (F_{E,i,\tau-1} - F_{E,i,\tau})\frac{T-\tau\Delta t_e}{\Delta t_e}\right]
+\]
+
+Where $t_e$ is the ember simulation time, different from the level set time, and c is the simulation cell size.
+
+Then, the simple model calculates the probability of ignition $P_N$ at that time step as:
+
+\[
+P_N=1-(1-P_I)^{(\Delta t/\tau_I)}
+\]
+
+Where $P_I$ is the predefined ignition constant (1 as standard), $\Delta t$ is the level set method timestep, and $\tau_I$ is the ignition delay of the accumulated firebrands. After this calculation, whether the firebrands cause a successful ignition in the next timestep is dictated by a randomly generated number. 
+
+The more complex model is based on physical thermakin simulations and expreimental observations of firebrand ignition by De Beers 2023. 
+
+Assuming an individual ember mass $m$ of 0.2 g, an ignition criterion $C_I$ can be defined based on a best fit curve of statistical results at probability of ignition of 50\%:
+
+\[
+C_I=h_f\:\hat{N}\:m\:10^{-4}(U_{1}-0.003)(U_{1}-4.017)+0.188
+\]
+
+Where $h_f$ is a hardening factor, fuel specific as set to 1 as standard, and $U_mf$ is the windspeed 1 m above the ground. If the criterion is satisfied, $P_I$ is set to 0.9, and 0 otherwise. The results are then used in the same way as the simple model, ignition might happen in the next time step depending on the results of a random number. 
+
+This process can be turned off if required for vegetative fuels, so they always ignite no matter the ember flux.
+
+\subsection{Decay and Consumption}
+
+The above analysis might indicate that embers are always active once they accumulate on the ground. The last step in the process is to account for the transient cooling of firebrands once they land. This effect is accounted for via the ember heat flux profile. The heat flux profile is assumed to be triangular, with a linear rise and a linear decay.
+
+The time taken for the firebrand pile to go from zero heat flux to maximum, so the total linear rise duration, $T_{\text{rise}}$, is calculated by:
+\[
+T_{\text{rise}} = 1.02\,U_1^{2} + 9.08\,U_1 + 35
+\]
+
+And the rate of heat flux rise is:
+
+\[
+HF_{\text{rise}} = 0.962\bigl(-0.32\,U_1^{2} + 1.59\,U_1 + 0.1\bigr)\,\tanh(12\,\psi)
+\]
+
+With:
+
+\[
+\psi = \hat{N}\;m\;10^{-4} \;\;\;g/cm^2
+\]
+
+Then the rate of heat flux decay
+
+\[
+HF_{\text{decay}}
+= \bigl(-0.05\,U_1^{2} + 0.02\,U_1 - 0.01\bigr)\,\tanh(12\,\psi)
+\]
+
+At the start of the process, the initial heat flux value is assumed to be:
+\[
+HF_{T_0} = 12\,HF_{\text{rise}}
+\]
+
+With an overall maximum value:
+\[
+HF_\text{max} = HF_{T_0} + HF_{\text{rise}}\,T_{\text{rise}}
+\]
+
+A firebrand pile is then considered effective for ignition if its heat flux is above a specific critical value:
+\[
+HF_{\text{crit}} = 10
+\]
+
+The time taken to reach the critical heat flux from the start is then:
+\[
+T_\text{c,rise}
+= \max\!\left(\frac{HF_{\text{crit}} - HF_{T_0}}{HF_{\text{rise}}},\; 0\right)
+\]
+
+And the critical heat flux is reached in the decay phase after time:
+\[T_{\text{c,fall}}
+= T_{\text{rise}}
++ \frac{HF_{\text{crit}} - HF_{\max}}{HF_{\text{decay}}}
+\]
+
+Meaning the overall lifetime of the burning pile is:
+\[
+T_{\text{lifetime}}
+= T_{\text{c,fall}} - T_{\text{c,rise}}
+\]
+
+If we also assume a linear firebrand pile mass consumption rate:
+
+\[
+\frac{d\hat{N}}{dt}=\frac{\hat{N}}{T_\text{lifetime}}
+\]
+
+Then the ember flux parameter can be adjusted, for the ember flux entry $\tau$ at level set method timestep $\Delta t$:
+
+\[
+F_{E,\tau}=EF_{\tau}-\frac{d\hat{N}}{dt}\Delta t
+\]
+
+This ember flux will be used the next time the eulerian transport model is called, and the new ignition probabilities are called. 
+
+\section{Suppression}
+
+The suppression module of ELMFIRE is experimental and still under development. It does not attempt to model individual firefighter actions at specific times or places, but instead estimates the total probability of containment of the wildfire, assuming firefighting action is applied uniformly to all active fire fronts. 
+
+There are two parts to the suppression module of ELMFIRE. One is for estimating the probability of success of an initial containment attempt, based on the fire's size and fireline intensity. The other is for estimating the effects of extended attack durations, estimating the possible containment percentage of the fire. 
+
+\subsection{Initial Attack}
+
+The approach used here to quantify initial attack probability of containment is based on the analysis of Hirsch et al, who leveraged expert judgment to quantify initial attack effectiveness as a function of fire size and head fire fireline intensity, i.e. intensity at the main advancing fire front, at the time of initial attack commencement. The authors developed an expression for probability of containment (POC) as a function of fire size (A) and fireline intensity ($I_b$) which is given in the equation below:
+
+\[
+POC = \frac{E}{1 + E}\;\;\;\;\;\;\;\;\;\;\;\ln E
+    = 4.6835 - 0.7043A - 0.00041I - 0.000052\,AI_b
+\]
+
+In the equation above, $A$ is in hectares and $I_b$ is in kW/m. Since trends in probability of containment are not immediately apparent upon inspection of the equation, probability of containment calculated from the equation is tabulated in the following table as a function of fire size and head fire fireline intensity at the time of initial attack. Although the qualitative trends in the table are logical, i.e. containment probability increases with smaller fires, lower intensity, or both, the Hirsch et al. study was based on expert opinion from Canadian firefighters so differences in suppression tactics between Canadian and U.S. agencies are not reflected in the table.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1\linewidth]{figs/suppressionTable.png}
+    \caption{The probability of successful attack, ploted according to the POC equation above.}
+    \label{fig:poc_table}
+\end{figure}
+
+\subsection{Extended Attack}
+
+The aim of the extended attack module is to estimate the target containment of the fire at every given timestep, and compare that to the estimated actual containment. 
+
+At any given time step $t$ (dictated by an input variable and not directly equal to the fire spread timestep) during the level set fire spread, change in burning area can be calculated as:
+
+\[
+\frac{\delta A}{\delta t} = \frac{A_t-A_{t-1}}{\Delta t}
+\]
+
+And the change in the cumulative suppression difficulty index $\delta A_{SDI}$, representing the sum of the suppression difficulty index across the currently burning landscape (or if the user chooses to not use an SDI input, is equal to the currently burning acreage) can be calculated as:
+
+\[
+\frac{\delta A_{SDI}}{\delta t} = \frac{A_{SDI,t}-A_{SDI,t-1}}{\Delta t}
+\]
+
+Then, the mean SDI of that timestep can be calculated by:
+
+\[
+\overline{SDI}_t = \frac{\delta A_t / \delta t}{ \delta A_{SDI,t} / \delta t}-1
+\]
+
+$\overline{SDI}_t$ is constrained to values between 0 and 1. 
+
+From this, the change in target containment for that timestep can be estimated:
+
+\[
+\delta C_{T,t}=0.01\psi C_mJ\exp{(-|B_{SDI}\overline{SDI}_t|)}
+\]
+
+Where $\psi$ is the diurnal adjustment factor, $C_m$ is the maximum containment per day, $B_{SDI}$ is a calibration constant, and J is a function that can be toggled between linear and lognormal:
+
+\[
+J=1-\frac{\delta A / \delta t}{A_{nc}} \; or \; J=1-\frac{(\log{\delta A/ \delta t)}}{\log{(A_{nc})}} 
+\]
+
+With $A_{nc}$ being the area of no containment change per containment timestep. In broad terms, the change in containment is primarily controlled by the fire area increase, compared to the maximum area change with no containment change.
+
+Then the total target containment of that timestep can be estimated by:
+
+\[
+C_{T,t} = C_{T,t-1} + \delta C_{T,t}
+\]
+
+The target containment of that time step can then be compared to the predicted actual containment of the fire. The analysis considers the cumulative containment of the fire by analyzing the fire front per angle from the centroid of the burning area (by adding and averaging the X and Y coordinates of all burning points). 
+
+First step in the process is separating all the burning points into bins of closest angle from the centroid. For a given angle $i$, the velocities of all the points in that bin are in the set $V_i$, and the total number of cells within that bin is $N_i$. The average velocity of that bin is then calculated by:
+
+\[
+\overline{V_i}=\frac{\sum(V_i)}{N_i}
+\]
+
+The suppressed fraction $s_i$, representing the percent amount of previously suppressed points in the bin, is calculated similarly.
+
+The current containment $C_C$, before the new burning points of the landscape have been added, can then be estimated by:
+
+\[
+C_{C,p} = \sum s_i\frac{N_i}{N}
+\]
+
+With $N$ being the total number of burning or contained points for all bins. 
+
+An intermediate step in this process is to smooth out the velocities $V_i$ of each bin, by averaging the velocities of the 22 angles on either side. 
+
+Then the effect of the new burning points is added, making sure that the process stops if the current containment reaches the target containment:
+
+\[
+C_C = C_{C,p} + \sum(1-s_i)\frac{N_i}{N}
+\]
+
+
+
+\section{Urban Fire Spread}
+
+The urban fire spread model adapted in ELMFIRE is taken from Purnomo et al (2024), and describes a semi-physical model to estimate the spread of fire though a built-up area, which up to now was considered nonburnable by Rothermel-based fire models. 
+
+The heat transfer from a fire front to a nearby building is broken down into direct flame contact, radiation and firebrands. Each of the three heat transfer mechanisms is assumed independent, although areas with direct flame contact do not calculate radiation as well.
+
+Each of these heat transfer mechanisms has a range of effect. Radiation is capped at 100m for computational reasons. For direct flame contact, the Hamada model is used to estimate its range of effect. Due to the rarity of digital copies of this work, the Hamada model as explained by Qui (2025) has been repeated below.
+
+\subsection{The Hamada Model}
+
+The Hamada model was developed for a point source building ignition, in a uniform community. It calculates the fire spreads based on an elliptical assumption, explicitly calculating the spread of the fire downwind ($K_d$), upwind ($K_u$), and crosswind ($K_s$). These parameters are enough to get a Length over Width (LoW) measure, that can be directly applied using the elliptical fire spread equations we have already established. 
+
+The original elliptical dimensions are: 
+
+\[
+K_d = \frac{(a_0 + d)\,t}{T_d},
+\]
+
+\[
+K_s = \frac{a_0}{2} + d + \frac{(a_0 + d)(t - T_s)}{T_s},
+\]
+
+\[
+K_u = \frac{a_0}{2} + d + \frac{(a_0 + d)(t - T_u)}{T_u}.
+\]
+
+With $a_0$ denoting average building footprint dimension, $d$ is average building separation, and $t$ is the elapsed time. A later correction by Hazus was introduced to correct for an overestimation of fire spread under zero wind:
+
+\[
+K'_{d}
+= K_{d}\frac{V}{10}
++ \left(1 - \frac{V}{10}\right)
+  \sqrt{\left(\frac{K_{d} + K_{u}}{2}\right)}\,K_{s},
+\]
+
+\[
+K'_{s}
+= K_{s}\frac{V}{10}
++ \left(1 - \frac{V}{10}\right)
+  \sqrt{\left(\frac{K_{d} + K_{u}}{2}\right)}\,K_{s},
+\]
+
+\[
+K'_{u}
+= K_{u}\frac{V}{10}
++ \left(1 - \frac{V}{10}\right)
+  \sqrt{\left(\frac{K_{d} + K_{u}}{2}\right)}\,K_{s}.
+\]
+
+Where $V$ is the wind speed. The above equations can be rearranged to solve for the time taken for the fire to reach adjacent buildings. 
+
+\[
+T_i
+=
+(1 - f_b)\left(
+  3 + 0.375\,a_0
+  + \frac{8d}{\,c_{4i} + c_{5i}V\,}
+\right)
++
+\frac{f_b}{C(V)}\left(
+  5 + 0.625\,a_0
+  + \frac{16d}{\,c_{4i} + c_{5i}V\,}
+\right),
+\]
+
+\[
+C(V) = c_{1i}\bigl(1 + c_{2i}V + c_{4i}V^{2}\bigr).
+\]
+
+
+where $i$ indexes wind directions (downwind, crosswind, upwind), and $f_b$ is the combustible fraction. Empirical constants $c_{ki}$ are tabulated below:
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{c c c c c c}
+\hline
+$i$ & $c_{1i}$ & $c_{2i}$ & $c_{3i}$ & $c_{4i}$ & $c_{5i}$ \\
+\hline
+d & 1.6 & 0.1 & 0.007 & 25.0 & 2.5 \\
+s & 1.0 & 0.0 & 0.005 & 5.0  & 0.25 \\
+u & 1.0 & 0.0 & 0.002 & 5.0  & 0.2 \\
+\hline
+\end{tabular}
+\end{table}
+
+Then, the spread extent and spread time can be used to find the rate of spread of the fire towards each direction:
+\[
+V_i
+= \frac{dK'_i}{dt}
+= \frac{V}{10}\,\frac{dK_i}{dt}
++ \frac{1}{4}\left(1 - \frac{V}{10}\right)\mathcal{A},
+\qquad i \in \{d,s,u\}.
+\]
+
+
+\[
+\mathcal{A} :=
+\sqrt{\frac{2}{(K_d + K_u)\,K_s}}
+\left[
+  \frac{dK_s}{dt}(K_d + K_u)
+  + K_s\!\left(\frac{dK_d}{dt} + \frac{dK_u}{dt}\right)
+\right].
+\]
+
+With the temporal derivatives:
+
+\[
+\frac{dK_i}{dt}=\frac{a_0+d}{T_i}
+\]
+
+The results can then be used to calculate the LoB of the urban fire spread ellipse:
+
+\[
+LB = \frac{V_u+V_d}{V_s}
+\]
+
+\subsection{Direct Flame Contact}
+
+For a burning point in the landscape, the heat release rate is calculated by:
+
+\[
+\dot{q}_{c} = \frac{HRR \cdot A_{t}}{\Delta x^{2}}
+\]
+
+
+Where $\dot{q}_{c}$ (kW) is the heat from DFC, $HRR$ (kW) is the heat release rate of a source cell, $A_t$ (m2 ) is the area of a target cell affected by the flame, and $\Delta x^2$ (m2) is the total cell area. In the model, $A_t$ is assumed as the product of the cell size $\Delta x$ and the distance from the furthest
+intersection point between the red ellipse and the target cell edge.
+
+HRR is assumed to start at 0 for a building/cell that has just ignited, riding linearly to a maximum peak HRR Per Unit Area value of 150 $kW/m^2$, taken from Maranghides and Johnson, and then decreasing linearly to zero. This HRR profile follows the methods of Masoudvaziri et al. The exact values used here are 5 min rise time, 1 min peak time and 60 min decay time.
+
+If the wildfire is approaching from a vegetated area towards an urban area, the HRR is calculated as a product of the fireline intensity $I_b$ and the cell size $\Delta x$. The inverse is also true, urban fire spread can spread into vegetated areas by a similar process of heating flux. 
+
+\subsection{Radiation}
+
+The radiation term is a simplified point source solution. It also relies on the HRR value, an extensive discussion for which was given in the previous section. The radiative heat release rate $\dot{q}''_{r}$ is given by:
+
+\[
+\dot{q}''_{r}
+= \frac{0.3\,HRR}{4\pi R^{2}}
+\]
+
+Where $R$ is the distance between the source and the target cell. 
+
+\subsection{Ignition}
+
+Heat received by an unburned cell is given by Eq. (4), where $\dot{q}_{t}$ (kW) is the total heat received, $a_c$
+and $a_r$ are fire transfer coefficients for DFC and radiation, and $\Delta x^2$ ($m^2$) is the area of the burning house. Fire transfer coefficients ($a_c$ and $a_r$) represent the target’s propensity to receive heat through DFC or radiation. The DFC coefficient $a_c$ depends on house material and
+configuration, while the radiative coefficient $a_r$
+is the product of $a_c$ and house radiation absorptivity. For simplicity, we derived $a_c$ as shown in Eq. (5), incorporating the combustible material surface area ($S_b$, $m^2$), vegetation area outside the house within the same cell ($S_v$, $m^2$), and the total surface area ($S_t$, $m^2$).
+
+\[
+\dot{q}_{t}
+= \alpha_{c}\,\dot{q}_{c}
+  + \alpha_{r}\,\dot{q}''_{r}\,\Delta x^{2},
+\]
+
+\[
+\alpha_{c}
+= \frac{S_{b} + S_{v}}{S_{t}}.
+\]
+
+Then, the ignition criterion used in ELMFIRE is a critical Flux Time Product (FTP), as a simplification of the complex processes of ignition. From the above, the rate of spread magnitude can be calculated as:
+
+\[
+U=\frac{\sum \dot{q}_{t}}{FTP\: \Delta x}
+\]
+
+The direction can be calculated by calculating the ellipse parameters from before, and applying them to the same submodel as the elliptical breakdown of the surface spread model:
+
+\[
+a = \frac{K_d + K_u}{2},
+\]
+
+\[
+c = \min\!\left( \frac{a}{2},\, a - K_u \right),
+\]
+
+\[
+b = \frac{K_s}{\sqrt{\,1 - \left(\tfrac{c}{a}\right)^{2}}}.
+\]
+
+And the directional rates of spread can be calculated:
+
+\[
+V_d = U \cdot \frac{(a + c)\,\Delta x}{2(a + b)},
+\]
+
+\[
+V_s = U \cdot \frac{2b\,\Delta x}{2(a + b)},
+\]
+
+\[
+V_u = U \cdot \frac{(a - c)\,\Delta x}{2(a + b)}.
+\]
+
+
+
+\section{Diurnal Profiles}
+
+The diurnal factors, aiming at adjusting for the Rothermel model's known overestimation of night-time rate of spread, require an estimation of the sunrise and sunset times of the area of interest. The calculations used in ELMFIRE come from the NOAAs sunrise/sunset calculations, and will be repeated here:
+
+The fractional year $\gamma$, in radians, is computed as:
+\[
+\gamma =
+\frac{2\pi}{365}
+\left(
+\mathrm{day\_of\_year} - 1
++
+\frac{\mathrm{hour} - 12}{24}
+\right)
+\]
+For leap years, replace 365 with 366.
+
+Using $\gamma$, we compute the equation of time (in minutes):
+\[
+\mathrm{eqtime} = 229.18 \left(
+0.000075
++ 0.001868\cos\gamma
+- 0.032077\sin\gamma
+- 0.014615\cos(2\gamma)
+- 0.040849\sin(2\gamma)
+\right)
+\]
+
+The solar declination angle (in radians) is:
+\[
+\mathrm{decl} =
+0.006918
+- 0.399912\cos\gamma
++ 0.070257\sin\gamma
+- 0.006758\cos(2\gamma)
++ 0.000907\sin(2\gamma)
+- 0.002697\cos(3\gamma)
++ 0.00148\sin(3\gamma)
+\]
+
+First compute the total time offset (minutes):
+\[
+\mathrm{time\_offset}
+=
+\mathrm{eqtime}
++ 4(\mathrm{longitude})
+- 60(\mathrm{timezone})
+\]
+Longitude is in degrees, positive east of the prime meridian.  
+Timezone is hours from UTC (e.g., U.S. Mountain Standard Time = $-7$).
+
+Then the true solar time (minutes) is:
+\[
+\mathrm{tst} =
+\mathrm{hr} \cdot 60
++ \mathrm{mn}
++ \frac{\mathrm{sc}}{60}
++ \mathrm{time\_offset}
+\]
+
+The solar hour angle (degrees) is:
+\[
+\mathrm{ha} = \frac{\mathrm{tst}}{4} - 180
+\]
+
+The solar zenith angle $\phi$ is given by:
+\[
+\cos\phi
+=
+\sin(\mathrm{lat}) \sin(\mathrm{decl})
++
+\cos(\mathrm{lat}) \cos(\mathrm{decl}) \cos(\mathrm{ha})
+\]
+
+The solar azimuth angle $\theta$ (degrees clockwise from north) satisfies:
+\[
+\cos(180 - \theta)
+=
+-
+\frac{
+\sin(\mathrm{lat}) \cos\phi
+-
+\sin(\mathrm{decl})
+}{
+\cos(\mathrm{lat}) \sin\phi
+}
+\]
+
+For sunrise or sunset, the zenith angle is set to:
+\[
+z_0 = 90.833^\circ
+\]
+accounting for atmospheric refraction and solar disk radius.
+
+The corresponding hour angle is:
+\[
+\mathrm{ha}
+=
+\pm \arccos
+\left\{
+\frac{
+\cos z_0
+}{
+\cos(\mathrm{lat}) \cos(\mathrm{decl})
+}
+-
+\tan(\mathrm{lat}) \tan(\mathrm{decl})
+\right\}
+\]
+The $+$ sign corresponds to sunrise, $-$ to sunset.
+
+\[
+\mathrm{sunrise}
+=
+720
+-
+4(\mathrm{longitude} + \mathrm{ha})
+-
+\mathrm{eqtime}
+\]
+(all angles in degrees, eqtime in minutes).
+
+Solar noon occurs at:
+\[
+\mathrm{snoon} =
+720 - 4(\mathrm{longitude}) - \mathrm{eqtime}
+\]
+
+
+

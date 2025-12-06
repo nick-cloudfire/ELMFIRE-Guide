@@ -1,0 +1,50 @@
+\usepackage{graphicx} % Required for inserting images
+\usepackage{array}
+\usepackage{amssymb}
+\usepackage{pifont}
+\usepackage{adjustbox}
+\usepackage[margin=1in]{geometry}
+
+\usepackage{longtable}
+\usepackage{pdflscape}   % rotates the *page* in the PDF viewer
+
+
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{caption}
+\usepackage{siunitx}
+\sisetup{detect-all}
+
+\usepackage{setspace}
+
+\usepackage{amsmath}
+
+\onehalfspacing
+\usepackage{parskip}  % sets a sensible \parskip and zero \parindent
+
+\usepackage{subcaption} %subfigures
+
+\usepackage[table,xcdraw]{xcolor}
+
+\newcommand{\code}[1]{%
+  \texttt{\hyphenchar\font=`\- #1}%
+}
+
+\usepackage{siunitx}    % alignment for numbers
+\sisetup{
+  detect-weight=true,
+  detect-family=true
+}
+\newenvironment{cfTable}[3]{%
+    \begin{table}[htbp]
+      \centering
+      \caption{#1}
+      \label{#2}
+      \begin{minipage}{#3}
+        \centering
+        \small
+}{%
+      \end{minipage}
+    \end{table}
+}
+

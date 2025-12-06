@@ -1,0 +1,26 @@
+\begin{cfTable}{The main dump routine outputs of ELMFIRE.}{tab:main_dump}{1.0\textwidth}
+\begin{tabular}{lp{4cm}lll}
+\multicolumn{5}{c}{MAIN DUMP ROUTINE}                                                                                                 \\
+Option                     & Description                                              & Units                    & Type   & Output    \\
+\specialrule{1.2pt}{0pt}{0pt}
+DUMP\_TRANSIENT\_ACREAGE   & Total fire scar size over time                           & acres                    & CSV    & Final     \\
+DUMP\_SURFACE\_FIRE        & Status of surface fire (1 = burned, 0 = unburned)        & Categorical              & Raster & Transient \\
+DUMP\_CROWN\_FIRE          & Status of crown fire (0 = none, 1 = passive, 2 = active) & Categorical              & Raster & Transient \\
+DUMP\_SPREAD\_RATE         & Rate of Spread                                           & ft/min                   & Raster & Final     \\
+DUMP\_HPUA                 & Heat per unit area                                       & kJ/m\textasciicircum{}2  & Raster & Final     \\
+DUMP\_FLIN                 & Fireline Intensity                                       & kW/m                     & Raster & Final     \\
+DUMP\_FLAME\_LENGTH        & Flame Length                                             & ft                       & Raster & Final     \\
+DUMP\_REACTION\_INTENSITY  & Reaction intensity                                       & kW/m\textasciicircum{}2  & Raster & Final     \\
+DUMP\_WS20                 & Wind speed                                               &                          & Raster & Transient \\
+DUMP\_WD20                 & Wind direction                                           & degrees                  & Raster & Transient \\
+DUMP\_VELOCITY             & Rate of Spread                                           & ft/min                   & Raster & Final     \\
+DUMP\_TIME\_OF\_ARRIVAL    & Fire arrival time                                        & s                        & Raster & Final     \\
+DUMP\_TOTAL\_DFC\_RECEIVED &                                                          &                          &        &           \\
+DUMP\_TOTAL\_RAD\_RECEIVED &                                                          &                          &        &           \\
+DUMP\_HRR\_TRANSIENT       &                                                          &                          &        &           \\
+DUMP\_TAGGED               & Show currently 'Tagged' Cells (1 = Tagged)                           & Categorical  & Raster & Transient \\
+DUMP\_PHI                  & Level set phi variable                                   & -                        & Raster & Transient \\
+DUMP\_EMBER\_FLUX          &                                                          &                          &        &           \\
+DUMP\_SPOTTING\_OUTPUTS    & Ember spatial and temporal travel data                   & coordinates, s           & CSV    & Final    
+\end{tabular}
+\end{cfTable}
