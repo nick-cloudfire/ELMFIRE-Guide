@@ -130,14 +130,6 @@ DUMP_TIME_OF_ARRIVAL = .TRUE.
 CONVERT_TO_GEOTIFF   = .TRUE.
 /
 
-!The computational domain namelist sets parameters regarding the simulation space.
-&COMPUTATIONAL_DOMAIN
-A_SRS = 'EPSG: 32635'
-COMPUTATIONAL_DOMAIN_CELLSIZE = 30
-COMPUTATIONAL_DOMAIN_XLLCORNER = -1500
-COMPUTATIONAL_DOMAIN_YLLCORNER = -1500
-/
-
 !The time control namelist dictates everything about the duration, step size and 
 !temporal fidelity of the simulation. For now the only thing that needs to be specified
 !is the duration of the simulation.
@@ -305,7 +297,7 @@ The following sections will go into depth of the different variables, options an
 \section{Surface Fire Spread}
 \label{surface_fire_spread}
 
-Surface fire spread is the default fire spread mode of ELMFIRE, and will always run when the minimum inputs are provided. 
+Surface fire spread is the default fire spread mode of ELMFIRE, and will always run when the minimum inputs are provided. The default surface fire rate of spread model is the Rothermel model \cite{rothermel_mathematical_1972}. Alternative spread models will be described in following sections. 
 
 The first step in setting up ELMFIRE is to specify the geospatial input files. A distinction is made between weather files, and fuel and topography files. The fuel and topography files must be single-bad .tif files, all equal in extent and cellsize, colocated in space, and with a set NODATA value (even if none of the cells are NODATA). ELMFIRE does not check that these requirements are met and will crash with no relevant error message if any of these are not valid. The same goes with the variable type of each file.  Filenames should be specified without a suffix (e.g., 'slp', not 'slp.tif' because ELMFIRE automatically appends the .tif suffix to filenames (if they are virtual raster (.vrt) files, this behavior can be changed by setting VRT\_INSTEAD\_OF\_TIF = .TRUE.). The user must ensure that all GIS inputs are self-consistent.
 
@@ -331,9 +323,9 @@ All the above is also true for the weather rasters, all of which need to be Floa
 \begin{enumerate}
     \item WS\_FILENAME: 20-ft wind speed in mph
     \item WD\_FILENAME: 20-ft wind direction in degrees
-    \item M1\_FILENAME: 1-hour dead fuel moisture content in %
-    \item M10\_FILENAME: 10-hour dead fuel moisture content in %
-    \item M100\_FILENAME: 100-hour dead fuel moisture content in %
+    \item M1\_FILENAME: 1-hour dead fuel moisture content in \%
+    \item M10\_FILENAME: 10-hour dead fuel moisture content in \%
+    \item M100\_FILENAME: 100-hour dead fuel moisture content in \%
 \end{enumerate}
 
 If the rasters specified above are single-band, then wind/weather conditions are assumed to be unchanging for the duration of the simulation. Transient wind/weather streams can be provided as input by using multi-band, or “stacked”, rasters. In that case, the parameter DT\_METEOROLOGY should be specified on the \&INPUT line. DT\_METEOROLOGY is the time interval (in seconds) between bands in the weather rasters. DT\_METEOROLOGY is commonly set to 3600 seconds due to the use of hourly reanalysis or forecast products to drive fire spread simulation. If wind speed is provided at 10 meters instead of 20 feet, the parameter WS\_AT\_10M should be set to .TRUE..
@@ -344,6 +336,30 @@ ELMFIRE automatically interpolates between specific weather parameter steps, dur
 
 The Rothermel model requires midflame windspeed for its calculation. A wind adjustment factor is automatically calculated based on the algorithms in BEHAVE and Farsite. FARSITE and ELMFIRE assume a crown ratio of 1 for their calculation. This can be manually changed if needed through CROWN\_RATIO FPIXE:L. 
 
+\subsection{Alternative Spread Models}
+\label{alternative_models}
+
+While the standard model to estimate the rate of spread of the simulated wildfire is the Rothermel model \cite{rothermel_mathematical_1972, andrews_rothermel_2018}, alternative models can be integrated into ELMFIRE. A surface rate of spread model that has been integrated to ELMFIRE is the Canadian Fire Behavior Prediction model (FBP), part of the Canadian Forest Fire Danger Rating System (CFFDRS). The FBP is based on a series of developments and submodels developed by the Canadian Forestry Service, including the Forest Fire Weather Index system (FWI) \cite{van_wagner_development_1987}, the Fire Behavior Prediction system (FBP) \cite{wotton_development_1992}, and the 2009 corrections and updates \cite{wotton_updates_2009}. The model has been implemented operationally to the now deprecated Prometheus software \cite{tymstra_development_2010} and the new WISE software. 
+
+To activate the canadian model in ELMFIRE, specify SURFACE\_SPREAD\_MODEL = 'CFFDRS' in the \&INPUTS namelist. By default, SURFACE\_SPREAD\_MODEL is set to 'ROTHERMEL'. The model then replaces the Rothermel maximum rate of spread calculation with the one specified in the FBP, including prolonged drought effects represented by the Build-Up Index (BUI). Calculating the BUI requires the Drought Code (DC) and Duff Moisture Code (DMC), both of which are sub-indices of the Fire Weather Index (FWI). These two indices are continuously updated (meaning each new measurement requires the previous measurement), and require daily weather data, specifically midday Temperature and Humidity, and 24h precipitation. As such, ELMFIRE requires additional inputs for the CFFDRS model to function. 
+
+The additional inputs are all in the \&INPUTS namelist. The first is START\_DC, the Drought Code at the closest midday before the fire ignition. This means that if the fire starts at 16:00, the START\_DC should be specified at 12:00 of the same day. If the fire starts at 09:00, the START\_DC should be specified at 12:00 of the previous day. The second new input is the starting Duff Moisture Code, START\_DMC, that functions similarly to START\_DC. The third input is DAILY\_WEATHER\_FILENAME, which specifies the full name of the file containing the daily midday weather stream, and should be within the WEATHER\_DIRECTORY folder. The structure of the weather stream is shown below: 
+
+\begin{verbatim}
+DAILY,TEMP,RH,PRECIP
+01/01/2025,30.2,25.4,0
+02/01/2025,28.2,22.3,0
+03/01/2025,28.8,31.5,0
+04/01/2025,26.5,39.8,3
+05/01/2025,29.4,35.1,0
+...
+\end{verbatim}
+
+The temperature is specified in Celsius, and the precipitation in mm. The date of each weather reading is specified in DD/MM/YYYY and is important, as the exact month of each measurement affects parameters within the DMC and DC calculations. Note that the dates that are specified in the weather file do not, as of yet, overwrite or affect CURRENT\_YEAR and HOUR\_OF\_YEAR parameters in the \&TIME\_CONTROL namelist. HOUR\_OF\_YEAR must be set as an input, so the rest of the program has a measure of the current simulation hour. 
+
+Also note that the standard Canadian FBP fuels are interpreted from the FBFM\_FILENAME file, so no change is needed. One change that might be desirable is the omission of Canopy Bulk Density and Canopy Base Height inputs, as the FBP has hardcoded these values as surface fuel parameters. If CH\_FILENAME and CBD\_FILENAME are not specified, the standard values found in \cite{tymstra_development_2010} will be used. 
+
+All other parts of ELMFIRE, including Crown Fire, Suppression, and Spotting, will work with the CFFDRS with no changes required. 
 
 \subsection{Grid Declination}
 \label{grid_declination}
@@ -353,11 +369,7 @@ In rare cases, direction rasters (specifically wind direction (WD) and aspect (A
 \section{Computational domain size, extents, and resolution}
 \label{computational_domain_size}
 
-Input parameters controlling configuration of the computational domain are specified via the \&COMPUTATIONAL\_DOMAIN namelist group. The computational domain has the same extents of the input GIS fuels data, but its resolution can be the same or finer than the fuels inputs, meaning a computational domain with 10 m grid spacing can be used even if fuels inputs have a spatial resolution of 30 m.
-
-The primary constraint is that the computational domain must fall completely within the GIS input data. This means that the computational domain can be the same size as or smaller than the input GIS data. Its spatial resolution can also be the same or finer than the input GIS fuels data.
-
-The computational domain is specified by the following parameters:
+Older versions of ELMFIRE required that the computational domain parameters be explicitly set in the input file via the \&COMPUTATIONAL\_DOMAIN namelist group. This group has been removed in newer versions of ELMFIRE, and the parameters below are determined automatically using GDAL. The parameters have been kept here for clarity. The computational domain is specified by the following parameters:
 
 \begin{itemize}
     \item A\_SRS: Projection of output files. Typically, a proj string would be used, i.e. A\_SRS = 'EPSG:32610'.
@@ -365,8 +377,6 @@ The computational domain is specified by the following parameters:
     \item COMPUTATIONAL\_DOMAIN\_XLLCORNER: x-coordinate of the lower left corner of the fuels inputs.
     \item COMPUTATIONAL\_DOMAIN\_YLLCORNER: y-coordinate of the lower left corner of the fuels inputs.
 \end{itemize}
-
-Note that this namelist group will soon be deleted since COMPUTATIONAL\_DOMAIN\_XLLCORNER, COMPUTATIONAL\_DOMAIN\_YLLCORNER, and A\_SRS can be determined internally from the fuels inputs’ metadata. When this happens, COMPUTATIONAL\_DOMAIN\_CELLSIZE will be moved to the \&SIMULATOR namelist group.
 
 \section{Time}
 \label{time}
@@ -403,7 +413,7 @@ The start of each ELMFIRE simulation, or equivalently the specific hour of the f
 \subsection{Overnight Adjustment}
 \label{overnight_adjustment}
 
-The Rothermel model is well known to overpredict the rate of spread at night times, even when accounting for changes in dead fuel moisture content. ELMFIRE can account for this by multiplying its predicted rates of spread by an OVERNIGHT\_ADJUSTMENT\_FACTOR, set at 0.1 by default. This adjustment factor can be activated by setting USE\_DIURNAL\_ADJUSTMENT\_FACTOR to .TRUE.. ELMFIRE then internally estimates the sunset and sunrise hours, applying the diurnal adjustment factor between those two times. The parameters LATITUDE, LONGITUDE, CURRENT\_YEAR and HOUR\_OF\_YEAR should be set manually for this, as currently they are not inferred from any of the other input files. LATITUDE and LONGITUDE, CURRENT\_YEAR and HOUR\_OF\_YEAR should be set to reflect the rough center of the domain, the current year, and the elapsed hour within the year (so 2180 would refer to March 31st, 20:00) respectively. SUNRISE\_HOUR and SUNSET\_HOUR can be set directly if known.
+The Rothermel model is well known to overpredict the rate of spread at night times, even when accounting for changes in dead fuel moisture content. ELMFIRE can account for this by multiplying its predicted rates of spread by an OVERNIGHT\_ADJUSTMENT\_FACTOR, set at 0.1 by default. This adjustment factor can be activated by setting USE\_DIURNAL\_ADJUSTMENT\_FACTOR to .TRUE.. ELMFIRE then internally estimates the sunset and sunrise hours, applying the diurnal adjustment factor between those two times. SUNRISE\_HOUR and SUNSET\_HOUR can be set directly if known.
 
 With the above parameters, the sunrise and sunset times are known either by input or calculation. The start time of the simulation (note the difference between start time of simulation and ignition start time) can then be set by FORECAST\_START\_HOUR. 
 
@@ -463,7 +473,7 @@ DUMP_TIME_OF_ARRIVAL      = .TRUE.
 /
 \end{verbatim}
 
-The keyword OUTPUTS\_DIRECTORY specifies the directory to which ELMFIRE will write its output files. This output directory must exist at run-time; it will not be automatically created. Transient outputs such as DUMP\_SURFACE\_FIRE will be dumped every DTDUMP seconds.
+The keyword OUTPUTS\_DIRECTORY specifies the directory to which ELMFIRE will write its output files. This output directory must exist at run-time; it will not be automatically created. Transient outputs such as DUMP\_SURFACE\_FIRE will be dumped every DTDUMP seconds. Rate of spread outputs are in units of ft/min as standard, but can be converted to m/min by setting SPREAD\_RATE\_IN\_M = .TRUE. in the \&OUTPUTS namelist.
 
 In general, outputs to be dumped are specified using a logical keyword that begins with DUMP\_*. The following is a full list of raster outputs and the logical keywords that control whether they are written to disk. 
 
@@ -473,14 +483,14 @@ Most output parameters are written as standard during or after an ELMFIRE simula
 
 Output filenames are hardcoded but should be readily discernable, e.g. fireline intensity outputs begin with flin\_, time of arrival outputs begin with toa\_, etc. Since ELMFIRE is sometimes used to run multiple cases as part of a Monte Carlo analysis or sensitivity analysis, a seven-digit sequential identifier is prepended to the name of each output raster, and the time at which the raster was dumped is appended to the filename.
 
-If a monte carlo simulation set is done, especially with random or multiple ignitions, it is useful to plot the scalar outputs on a map, depending on their ignition locations. Each run can be given an initial RUN\_ID string, to differentiate it from potential other monte-carlo runs. The outputs that are possible in this case are:
+If a monte carlo simulation set is done, especially with random or multiple ignitions, it is useful to plot the scalar outputs on a map, depending on their ignition locations. Each run can be given an initial RUN\_ID string, to differentiate it from potential other monte-carlo runs. The outputs that are possible in this case are given in the postprocessing table below.
 
 \input{tables/postprocess}
 
 The flame length and ember count bins are specified manually. That is, following the example below (same for the FLAME parameters).
 
 \begin{verbatim}
-USE_EMBER_LENGTH_BINS = .TRUE.
+USE_EMBER_COUNT_BINS = .TRUE.
 NUM_EMBER_COUNT_BINS  = 3
 EMBER_COUNT_BIN_LO(1) = 0
 EMBER_COUNT_BIN_HI(1) = 10
@@ -594,7 +604,7 @@ Corresponding to:
     \item HRR Peak Time: 10080 s
     \item FRR Decay Time: 14400 s
     \item Fuel Load: 360
-    \item Peak HRR Per Unit Area: 25
+    \item Peak HRR Per Unit Area: 25 $kW/m^2$
     \item Critical FTP: 10500
     \item Q Critical: 9
     \item Absorptivity: 0.89
@@ -605,8 +615,7 @@ Corresponding to:
     \item Time to ignition from Embers: 20 s
 \end{itemize}
 
-
-For temporary file storage and intermediate saves, ELMFIRE can use a scratch directory instead of the output directory. This folder can be specified using the SCRATCH variable. By default, this folder is used to store intermediate geospatial files. ELMFIRE converts the input geoTIFF files to binary, easier-to-process BSQ files. BSQ files come with associated XML or HDR files containing their metadata. If, for any reason, the BSQ files can be provided directly instead of the geoTIFF files (which would slightly speed up the initial data processing step), they can be used in ELMFIRE by setting USE\_EXISTING\_BSQS = .TRUE. in the \&INPUT namelist. ELMFIRE will then search for associated XML metadata files, but this can be switched to HDR files through USE\_BSQ\_XML\_HEADER = .FALSE..  
+For temporary file storage and intermediate saves, ELMFIRE can use a scratch directory instead of the output directory. This folder can be specified using the SCRATCH variable. By default, this folder is used to store intermediate geospatial files. ELMFIRE converts the input geoTIFF files to binary, easier-to-process BSQ files. BSQ files come with associated XML or HDR files containing their metadata. If, for any reason, the BSQ files can be provided directly instead of the geoTIFF files (which would slightly speed up the initial data processing step), they can be used in ELMFIRE by setting USE\_EXISTING\_BSQS = .TRUE. in the \&INPUT namelist. ELMFIRE will then search for associated XML metadata files, but this can be switched to HDR files through USE\_BSQ\_XML\_HEADER = .FALSE.. If you want to clear out the SCRATCH directory after the simulation is finished, set CLEAN\_SCRATCH = .TRUE. in the \&SIMULATOR namelist.
 
 In some use cases of ELMFIRE, the fire domain may be split into multiple files. Specifically, there are cases where the ignition is within the landscape of one geotiff file, but the overall burn area is extended to eight additional, neighboring rasters. Should this be the case, USE\_TILED\_IO can be set to .TRUE., and ELMFIRE will combine the fire landscape from the eight input files. These files should be named, using aspect as an example, asp\_1\_2.tif, where 1 and 2 refer to the rasters position in space. In this case, this raster would be the top-middle part of the landscape. The files should range from asp\_1\_1.tif to asp\_3\_3.tif. 
 
@@ -656,10 +665,19 @@ ELMFIRE keeps track of and checks all the cells that are currently burning. This
     \item They are classified as burned and have a $\phi$ value equal to -1 (Activated by UNTAG\_TYPE\_3 = .TRUE.)
 \end{itemize}
 
+\section{Barriers and Breaching}
+\label{barriers}
+
+Unburnable fire breaks such as roads, rivers, railroad lines and others can stop the spread of wildfires. Sometimes these landscape features are wide enough to be represented in the fuel raster, but most of the times they are too small compared to the fuel raster cell size and effectively disappear. This is especially important with flank- and backfire spread, where even narrow fire breaks can be enough to stop the fire spread. ELMFIRE uses the same models as Prometheus \cite{government_of_canada_development_2002}, using expert opinion and empirical evidence. The main breaching rule is that fire stops spreading when it encounters a barrier with width more than 1.5 times the flame length. 
+
+Barriers are read by ELMFIRE as a raster file, with each pixel of the raster having a value equal to the width of the barrier that crosses it. This file is usually generated by rasterizing an equivalent line vector files of roads, rivers, fuel breaks etc. To enable the use of barriers, set USE\_BARRIERS = .TRUE. in the \&INPUTS group, along with the BARRIER\_FILENAME (again omitting the .tif ending). 
+
+Note that this setting only applies to surface fire spread. Barriers can still be breached by firebrands if their landing distance is high enough. Right now, the barrier part of ELMFIRE has no effect on the spotting calculations. Also note that enabling spotting forces BANDTHICKNESS = 1, which does not affect the rate of spread of the fire, but does tend to produce more polygonal fire isochrones. 
+
 \section{Spotting}
 \label{spotting}
 
-Spotting is a major, often dominant, mode of fire propagation particularly under hot, dry, windy conditions. Parameters that control spotting are specified on the \&SPOTTING namelist group. Note that the current spotting model is different from the spotting model described in the original ELMFIRE paper. Make sure to include USE\_SUPERCEDED\_SPOTTING = .FALSE. to use the spotting methods in this guide. Spotting is disabled by default and can be enabled by setting ENABLE\_SPOTTING = .TRUE. in the \&SPOTTING namelist group. For the purposes or debugging or isolating the spotting model of ELMFIRE, NO\_SURFACE\_FIRE can be set to .TRUE. to disable surface fire spread, and (by setting an initial phi input representing a burning area) the spotting model can be tested without fire spread.
+Spotting is a major, often dominant, mode of fire propagation particularly under hot, dry, windy conditions. Parameters that control spotting are specified on the \&SPOTTING namelist group. Note that the current spotting model is different from the spotting model described in the original ELMFIRE paper. Make sure to include USE\_SUPERCEDED\_SPOTTING = .FALSE. to use the spotting methods in this guide. Spotting is disabled by default and can be enabled by setting ENABLE\_SPOTTING = .TRUE. in the \&SPOTTING namelist group. For the purposes or debugging or isolating the spotting model of ELMFIRE, NO\_SURFACE\_FIRE can be set to .TRUE. to disable surface fire spread, and (by setting an initial $\phi$ input representing a burning area) the spotting model can be tested without fire spread.
 
 \subsection{Generation}
 \label{ember_generation}
@@ -693,7 +711,7 @@ SURFACE_FIRE_SPOTTING_PERCENT(150:256) = 1.0
 
 A global parameter can also be set to set all the fuels to a specific value via GLOBAL\_SURFACE\_FIRE\_SPOTTING\_PERCENT. The keyword CRITICAL\_SPOTTING\_FIRELINE\_INTENSITY (default value of 0.0) is the fireline intensity in units of kW/m below which surface fire spotting does not occur. This parameter has no impact on crown fire spotting.
 
-A more physical ember generation option is available in ELMFIRE, as part of the UMD spotting model. By setting USE\_UMD\_SPOTTING\_MODEL to .TRUE., the number of generated firebrands will no longer be controlled by prescribed maximum and minimum values. Instead, spotting generation is controlled by an ember generation rate, EMBER\_GR (= 0.001 $\text{embers}\:m^{-2}\:s^{-1}$ as standard) and the ember calculation timestep TAU\_EMBERGEN (= 6 s as standard). 
+A more physical ember generation option is available in ELMFIRE, as part of the UMD spotting model. By setting USE\_UMD\_SPOTTING\_MODEL to .TRUE., the number of generated firebrands will no longer be controlled by prescribed maximum and minimum values. Instead, spotting generation is controlled by an ember generation rate, EMBER\_GR (= 0.001 $\text{embers}\:m^{-2}\:s^{-1}$ as default) and the ember calculation timestep TAU\_EMBERGEN (= 6 s as default). 
 
 \begin{verbatim}
 &SPOTTING
@@ -705,12 +723,37 @@ SURFACE_FIRE_SPOTTING_PERCENT(:)     = 1.0
 CRITICAL_SPOTTING_FIRELINE_INTENSITY = 2000.0
 USE_UMD_SPOTTING_MODEL               = .TRUE.
 EMBER_GR                             = 0.1
-TAU\_EMBERGEN                        = 5
+TAU_EMBERGEN                        = 5
 PIGN                                 = 100.0
+/
+ \end{verbatim}
+
+Another parameter that may affect the simulation is EMBER\_SAMPLING\_FACTOR. This is the number of real firebrands represented by each individual numerical particle. This option should be used with the first version of the transport algorithm, which traces the trajectory of each particle generated from a cell. By default, EMBER\_SAMPLING\_FACTOR = 1, meaning the simulator traces every generated firebrand. However, because each cell may generate a significant number of real firebrands, by setting EMBER\_SAMPLING\_FACTOR = 10, for example, one numerical particle represents 10 real firebrands. This method is valid when the number of firebrands is large enough that fewer particles can still approximate the ground-level distribution of the firebrands. If the second version of the firebrand transport algorithm is adopted, typically EMBER\_SAMPLING\_FACTOR should not be specified.
+
+The following parameters define a firebrand generation scenario with a customized firebrand generation duration (1 hour=3600 seconds) and rate $(10 pcs/s/m^2)$. EMBER\_SAMPLING\_FACTOR is set to 1, which is the default value.
+
+\begin{verbatim}
+&SPOTTING
+USE_PHYSICAL_SPOTTING_DURATION = .FALSE.
+USE_PHYSICAL_EMBER_NUMBER = .FALSE.
+
+TAU_EMBERGEN = 3600.0
+EMBER_GR = 10
+EMBER_SAMPLING_FACTOR = 1.0
+
+ENABLE_SURFACE_FIRE_SPOTTING = .TRUE.
+GLOBAL_SURFACE_FIRE_SPOTTING_PERCENT_MAX = 100.0
+GLOBAL_SURFACE_FIRE_SPOTTING_PERCENT_MIN = 100.0
+SURFACE_FIRE_SPOTTING_PERCENT_MULT(91) = 1.0
+SURFACE_FIRE_SPOTTING_PERCENT_MULT(102) = 0.0
+
+CRITICAL_SPOTTING_FIRELINE_INTENSITY(:)   = 0.
 /
 \end{verbatim}
 
-An EMBER\_SAMPLING\_FACTOR can be used to upscale or downscale the predicted ember generation numbers, for calibration or optimization. As an alternative, USE\_PHYSICAL\_EMBER\_NUMBER can be set to .TRUE., and then EMBER\_GR will be calculated automatically, based on a built-in value for ember generation per MW of the fire. The standard value is 33.3 for vegetated fuels, and 10 for building fuels. These two values can be modified by the user through EMBER\_GR\_PER\_MW\_VEGE and EMBER\_GR\_PER\_MW\_BLDG.
+Note that another set of parameters controls spotting behavior for different fuels. GLOBAL\_SURFACE\_FIRE\_SPOTTING\_PERCENT\_MAX and GLOBAL\_SURFACE\_FIRE\_SPOTTING\_PERCENT\_MIN define the probability of emitting firebrands from all cells as a percentage. The two parameters set the upper and lower bounds of the probability. The simulator selects a random value within these bounds during simulation to introduce perturbations. In the example, both parameters are set to 100, ensuring a deterministic result.
+
+As an alternative, USE\_PHYSICAL\_EMBER\_NUMBER can be set to .TRUE., and then EMBER\_GR will be calculated automatically, based on a built-in value for ember generation per MW of the fire. The default value is 33.3 for vegetated fuels, and 10 for building fuels. These two values can be modified by the user through EMBER\_GR\_PER\_MW\_VEGE and EMBER\_GR\_PER\_MW\_BLDG.
 
 The total time that a burning cell will be emitting embers for is set through TAU\_EMBERGEN (=6 by default). The switch USE\_PHYSICAL\_SPOTTING\_DURATION can be set to .TRUE. to calculate a more physical total emission value, especially for the building models. For vegetated models, the burn duration is dictated by the rate of spread of the fire. 
 
@@ -758,7 +801,7 @@ PIGN                                 = 100.0
 
 In this case, the one firebrand generated in potential cells will travel a random distance dictated by a lognormal PDF with a mean value of 5m and a variance of 250. Of course, both this and the UNIFORM option require the user to make assumptions regarding the distribution of firebrand landings. 
 
-A third option exists for estimating spotting travel distance, activated through USE\_UMD\_SPOTTING\_MODEL = .TRUE. (SPOTTING\_DISTRIBUTION\_TYPE still needs to be set to 'LOGNORMAL'). This activates the spotting model developed by UMD, which uses the pre-configured lognormal pdf developed by Sardoy et al. This model uses the 20ft wind speed, fireline intensity and Froude number to calculate PDF parameters. The user needs to input minimal new information for this spotting function. If they want, they can modify the factors associating spotting distance and wind (SPOT\_WS\_EXP = 0.9 as standard) and spotting distance and fireline intensity (SPOT\_FLIN\_EXP = 0.5 as standard). The solution of this model also requires a maximum range of the PDF to be solved, to obtain a maximum plausible landing distance. This value is determined by P\_EPS = 0.001, specifying that the maximum landing distance is, in this case, the top 0.1\% value of the PDF (set as standard). 
+A third option exists for estimating spotting travel distance, activated through USE\_UMD\_SPOTTING\_MODEL = .TRUE. (SPOTTING\_DISTRIBUTION\_TYPE still needs to be set to 'LOGNORMAL'). This activates the spotting model developed by UMD, which uses the pre-configured lognormal PDFs developed by Sardoy et al.\cite{sardoy_numerical_2008} for vegetative fuels and by Himoto et. al. \cite{} for structural fuels. Both models use the 10 m wind speed, fireline intensity and Froude number to calculate PDF parameters. The user needs to input minimal new information for this spotting function. Parameters of the PDF in the mode is not editable by the users. But the users have the option to define the maximum travel distance of the firebrands by the parameter P\_EPS. This value is the top 0.1\% value of the PDF, i.e., the (1-P\_EPS)'th percentile of the prescribed PDF. The default value of P\_EPS is 0.01, i.e., the 99th percentile of the prescribed PDF. 
 
 \begin{verbatim}
 &SPOTTING
@@ -770,39 +813,44 @@ SURFACE_FIRE_SPOTTING_PERCENT(:)     = 1.0
 CRITICAL_SPOTTING_FIRELINE_INTENSITY = 2000.0
 SPOTTING_DISTRIBUTION_TYPE           = 'LOGNORMAL'
 USE_UMD_SPOTTING_MODEL               = .TRUE.
-P_EPS                                = 0.001
+P_EPS                                = 0.01
 PIGN                                 = 100.0
 /
 \end{verbatim}
 
-Custom Sardoy PDF parameters can be specified by the user for the windward and crosswind ember distributions using the keywords:
+Custom lognormal PDF parameters can be specified by the user for the windward and crosswind ember distributions using the keywords:
 
 \begin{verbatim}
-SPOTTING_DISTRIBUTION_TYPE  = 'LOGNORMAL'
-USE_UMD_SPOTTING_MODEL      = .TRUE.
-USE_CUSTOMIZED_PDF          = .TRUE.
-MU_CROSSWIND                = 10
-SIGMA_CROSSWIND             = 2
-MU_DOWNWIND                 = 20
-SIGMA_DOWNWIND              = 10
+&SPOTTING
+ENABLE_SPOTTING                           = .TRUE.
+USE_SUPERSEDED_SPOTTING                   = .FALSE.
+USE_UMD_SPOTTING_MODEL                    = .TRUE.
+USE_EULERIAN_SPOTTING                     = .TRUE.
+P_EPS                                     = 0.01
+USE_CUSTOMIZED_PDF                        = .FALSE.
+MU_CROSSWIND                              = 0.0
+SIGMA_CROSSWIND                           = 0.0
+MU_DOWNWIND                               = 0.0
+SIGMA_DOWNWIND                            = 0.0
+/
 \end{verbatim}
 
-Once these parameters are set, no matter the method, the particles are allowed to travel across the domain to their landing destination. As standard, the CFL criterion of the level set mode is used for the ember transport. This can be changed by setting USE\_HALF\_CFL\_DT\_FOR\_SPOTTING = .TRUE..
+Once these parameters are set, no matter the method, the particles are allowed to travel across the domain to their landing destination. 
 
 \subsection{Ignition}
 \label{ember_ignition}
 
 The user can also choose the way in which the landing of firebrands is calculated. The two options are Lagrangian (treating each generated firebrand as one explicitly solved particle) and Eulerian (treating the firebrands as a flux, that is deposited in separate cells). The user can specify which one to use through USE\_EULERIAN\_SPOTTING = .TRUE. (or .FALSE. for Lagrangian)
 
-The Lagrangian model solves the flight path of each individual generated firebrand. As such, each firebrand will have a probabilistic flight path. It is then allowed to land to a cell and has a subsequent chance to start a new spot fire. Ignition probability once the particle has landed is controlled by the keyword PIGN, and an optional adjustment term SOURCE\_FUEL\_IGN\_MULT(:) based on the landed fuel type. 
+The Lagrangian model solves the flight path of each individual generated firebrand, and the path follows the streakline of a particle originated from the firebrand-emission source and has a probabilistic length determined by the PDF. It is then allowed to land to a cell and has a subsequent chance to start a new spot fire. Once the particle has landed, the ignition probability (probability of setting $\phi$ to -1 upon landing) is controlled by the keyword PIGN in the unit of percentage, and an optional adjustment term SOURCE\_FUEL\_IGN\_MULT(:) based on the landed fuel type. 
 
 To avoid allocating computational time to tracking embers that don’t initiate spot fire, it is most computationally efficient to set PIGN to 100\% and then set CROWN\_FIRE\_SPOTTING\_PERCENT to a small number. As an example, CROWN\_FIRE\_SPOTTING\_PERCENT = 50.0 and PIGN = 10.0 will produce comparable results to CROWN\_FIRE\_SPOTTING\_PERCENT = 5.0 and PIGN = 100.0, but the computational expense of the spotting algorithm is reduced by a factor of approximately 10x in the latter case. An additional multiplier can be added to this calculation, SURFACE\_FIRE\_SPOTTING\_PERCENT\_MULT(:), for optimization or calibration. 
 
-An alternative, and possibly more accurate method (that later relies less on user-determined ignition percentages) uses the Eulerian model, which does not track individual firebrands for ignition, but rather keeps track of the ember flux into each area. The switches USE\_EULERIAN\_SPOTTING, USE\_EMBER\_IGNITION\_MODEL must be set to .TRUE.. In the case of eulerian firebrand transport, there exist a simple and a physical ignition model, selected through USE\_SIMPLE\_IGNITION\_MODEL = .TRUE..
+An alternative, and possibly more numerically robust method (that later relies less on user-determined ignition percentages) uses the Eulerian model, which does not track individual firebrands for ignition, but rather keeps track of the ember flux into each area. The switches USE\_EULERIAN\_SPOTTING, USE\_EMBER\_IGNITION\_MODEL must be set to .TRUE.. In the case of eulerian firebrand transport, there exist a simple and a physical ignition model, selected through USE\_SIMPLE\_IGNITION\_MODEL = .TRUE..
 
-The simple model relies on a simple relation that requires the PIGN input, the local ignition time, LOCAL\_IGNITION\_TIME, and the firebrand ignition delay CELL\_IGNITION\_DELAY. To explain the last two physically, once a firebrand flux arrives at a specific cell, ignition will be expected at a time interval of LOCAL\_IGNITION\_TIME, and the growing fire itself will be large enough to be considered as a new fire source for the level set model after CELL\_IGNITION\_DELAY seconds. Both have preset values in ELMFIRE of 30 s and 100 s respectively.
+The simple model relies on a simple relation that requires the PIGN input, the local ignition time, LOCAL\_IGNITION\_TIME, and the firebrand ignition delay CELL\_IGNITION\_DELAY. To physically understand these parameters, once a firebrand flux arrives at a specific cell, PIGN is defined by the probability of a successful transition from smoldering to flaming within the time interval defined by LOCAL\_IGNITION\_TIME. Once the smoldering-to-flaming igntion is achieved, additional CELL\_IGNITION\_DELAY seconds will be required to effecitvely ignite the target cell (set $\phi$ to -1), which tries to represent the development of fire to a self-sustaining scale. Both LOCAL\_IGNITION\_TIME and CELL\_IGNITION\_DELAY have preset values in ELMFIRE of 30 s and 100 s respectively.
 
-The more complex ignition model is based on physical observations of the ignition chances of spherical firebrands. The probability of ignition is automatically calculating, reducing the need for PIGN to be specified. This mode has been developed with building fuels in mind, and can be skipped for vegetated fuels by setting DIFF\_WILDLAND\_IGNITION = .TRUE.. In the case of building fuels, where duilding fire spread has been turned on, a hardening factor can be applied to reflect any building preparations that make it more resistant to ember ignition. This can be set through GLOBAL\_HARDENING\_FACTOR in the \&WUI namelist. 
+The more complex ignition model is based on physical observations of the ignition chances of firebrands, and smoldering-to-framing transition probability and time are automatically calculated and parameterized as a function of local wind speed and accumulated firebrand flux. It reduces the need for PIGN to be specified. Note that this mode has been developed with building fuels and the vegetative fuels can be differentiated by setting DIFF\_WILDLAND\_IGNITION = .TRUE. in which case the vegetative fuels will definitely ignite after a delay defined by (LOCAL\_IGNITION\_TIME + CELL\_IGNITION\_DELAY) when the accumulated firebrand flux is larger than 0. In the case of building fuels, where the spread of the building fire has been turned on, a hardening factor can be applied to reflect any building preparations that make it more resistant to ignition by embers. This can be set through GLOBAL\_HARDENING\_FACTOR in the \&WUI namelist. 
 
 
 \subsection{Stochastic Parameters}
@@ -960,9 +1008,9 @@ This instructs ELMFIRE to aggregate all simulated fire perimeters and calculate 
 \section{Building Fire Spread}
 \label{building_spread}
 
-ELMFIRE contains an experimental building fire spread model based on the work of Purnomo et al (2024). Most Rothermel-based models consider built-up areas nonburnable, as urban conflagrations were not an issue when the model was developed. As such, neither the spread mechanisms nor any 'building' fuel models were developed. This model attemts to work with the same principles as the Rothermel model, in using elliptical fire spread from a discretized point source to spread the fire. More details can be found in the mathematical section. 
+ELMFIRE contains an experimental building fire spread model based on the work of Purnomo et al (2024) called WU-E. Most Rothermel-based models consider built-up areas nonburnable, as urban conflagrations were not an issue when the model was developed. As such, neither the spread mechanisms nor any 'building' fuel models were developed. This model attemts to work with the same principles as the Rothermel model, in using elliptical fire spread from a discretized point source to spread the fire. More details can be found in the mathematical section. 
 
-It can be turned on through USE\_BLDG\_SPREAD\_MODEL = .TRUE.. The input parameters can either be provided as constants for the entire simulation domain (by setting USE\_CONSTANT\_BLDG\_SPREAD\_MODEL\_PARAMS = .TRUE. (set .TRUE. as default. The BUILDING\_FUEL\_MODEL\_FILE needs to be specified. The option BLDG\_SPREAD\_MODEL\_TYPE can be set to choose between the Hamada model (1) and the UCB-UMD WU-E model (2). 
+It can be turned on through USE\_BLDG\_SPREAD\_MODEL = .TRUE.. The input parameters can either be provided as constants for the entire simulation domain (by setting USE\_CONSTANT\_BLDG\_SPREAD\_MODEL\_PARAMS = .TRUE. (set .TRUE. as default. The BUILDING\_FUEL\_MODEL\_FILE needs to be specified. The option BLDG\_SPREAD\_MODEL\_TYPE can be set to choose between the Hamada model (1) and the UCB-UMD WU-E model (2). The spread from wildland to urban has two option: the original (1) used in Purnomo et al (2024) and simplified version (2), which enabling spread based on distance and fireline intensity threshold. This option can be selected in \&WUI namespace through INTERFACE\_MODEL\_TYPE.
 
 The universal input parameters can be set:
 
@@ -984,7 +1032,47 @@ The equivalent raster inputs, specified in \&INPUTS are:
     \item BLDG\_FUEL\_MODEL\_FILENAME
 \end{itemize}
 
-Extra outputs can be specified with the building spread model. Turning ESTIMATE\_URAN\_LOSSES = .TRUE. in the \&OUTPUTS namespace will include the results of the building fire spread to the affected population and surface fire area statistics.
+As such, a valid part of the input file would be:
+
+\begin{verbatim}
+&WUI
+BLDG_AREA_CONSTANT                    = 20.0
+BLDG_SEPARATION_DIST_CONSTANT         = 10.0
+BLDG_NONBURNABLE_FRAC_CONSTANT        = 0.9
+BLDG_FOOTPRINT_FRAC_CONSTANT          = 0.2
+BLDG_FUEL_MODEL_CONSTANT              = 2
+BLDG_SPREAD_MODEL_TYPE                = 2
+INTERFACE_MODEL_TYPE                  = 1
+USE_BLDG_SPREAD_MODEL                 = .TRUE.
+USE_CONSTANT_BLDG_SPREAD_MODEL_PARAMS = .TRUE.
+/
+\end{verbatim}
+
+The keyword USE\_BLDG\_SPREAD\_MODEL determines whether or not the urban fire spread is activated. The keyword BLDG\_SPREAD\_MODEL\_TYPE corresponds to the urban fire spread model selected, 1 for Hamada model and 2 for WU-E model. The keyword USE\_CONSTANT\_BLDG\_SPREAD\_MODEL\_PARAMS determines if the structure attributes are assumed to be uniform. If this parameter is set .TRUE., then the structures in the domain to be simulated have uniform attributes determined by the 5 first parameters in the \&WUI namelist. All the structures in the domain will have area specified by BLDG\_AREA\_CONSTANT, separation distance by BLDG\_SEPARATION\_DIST\_CONSTANT, burnable fraction by BLDG\_NONBURNABLE\_FRAC\_CONSTANT, and building footprint by BLDG\_FOOTPRINT\_FRAC\_CONSTANT. When BLDG\_SPREAD\_MODEL\_TYPE is set to 2 (i.e., WU-E model), the structures also have attributes following the structure fuel model in building\_fuel\_models.csv. The value specified in BLDG\_FUEL\_MODEL\_CONSTANT corresponds to the row number in the building\_fuel\_models.csv. The structure fuel model categorizes structures based on their burning behavior consisting of heat release rate (HRR) curve and heat transfer coefficients. Columns 3 to 6 correspond to the time constant in the HRR curve, column 8 corresponds to the peak HRR, column 9 corresponds to critical flux time product (FTP), column 10 corresponds to radiation absorptivity, column 11 corresponds to structure height, and column 12 corresponds to noncombustible fraction by surface area of structures.
+
+If USE\_CONSTANT\_BLDG\_SPREAD\_MODEL\_PARAMS is set .FALSE., the structures attributes in the domain will become nonuniform and are specified based on input rasters, which are declared in the \&INPUTS namelist as the following:
+
+\begin{itemize}
+    \item BLDG\_AREA\_FILENAME: Structure area, m² (32-bit floating)
+    \item BLDG\_FOOTPRINT\_FRAC\_FILENAME: Structure footprint fraction (32-bit floating)
+    \item BLDG\_FUEL\_MODEL\_FILENAME: Structure fuel model in a cell (16-bit integer)
+    \item BLDG\_NONBURNABLE\_FRAC\_FILENAME: Nonburnable fraction of structure in a cell (32-bit floating)
+    \item BLDG\_SEPARATION\_DIST\_FILENAM: Separation distance, m (32-bit floating)
+\end{itemize}
+
+One important thing to highlight is the effect of roadways to WU-E. In the original LANDFIRE data, roadways are classified as fuel type 91, grouping them with urban cells. To differentiate between roadways and structures within these urban cells, roadway data such as from the Natural Earth public repository can be overlaid on the fuel type data. Initially, all urban cells, including structures and paved surfaces, were classified as fuel type 91, which is "burnable" when the urban fire spread model is enabled. However, by using the roadway data, cells containing paved areas can be identified and separated from those containing buildings. Urban cells without major roads were reclassified as "burnable", indicating the presence of structures that are susceptible to fire.
+
+In the most recent version, a new parameter is introduced in \&SIMULATOR namespace: HRR\_ELLIPSE\_ADJ. This parameter control the effective area of the flame ellipse affecting heat transfer to subsequent structures. A default value of 0.5 is used here; in future, this can be subject to calibration.
+
+Apart from the outputs that can be generated by the original ELMFIRE, when WU-E model is activated (BLDG\_SPREAD\_MODEL\_TYPE is set to 2), additional outputs on HRR and incident heat flux can be generated as the following:
+
+\begin{itemize}
+    \item DUMP\_TOTAL\_DFC\_RECEIVED: Total heat flux incident from direct flame contact, $kW/m^2$
+    \item DUMP\_TOTAL\_RAD\_RECEIVED: Total heat flux incident from radiation, $kW/m^2$
+    \item DUMP\_HRR\_TRANSIENT: Heat release rate per unit area at certain time, $kW/m^2$
+\end{itemize}
+
+Extra outputs can be specified with the building spread model. Turning ESTIMATE\_URBAN\_LOSSES = .TRUE. in the \&OUTPUTS namespace will include the results of the building fire spread to the affected population and surface fire area statistics.
 
 \section{Suppression}
 \label{suppression}
@@ -1087,9 +1175,40 @@ Each value denotes the probability that the duration of the simulation will be e
 
 
 \section{Smoke}
+\label{smoke}
 
-ELMFIRE has placeholder values for a future smoke submodel. This submodel has not yet been implemented, and as such this section of the guide has been left as a placeholder for future versions.
+ELMFIRE can calculate the smoke emissions of any given simulation for use with external dispersion models. As of this version, ELMFIRE treats each simulation as one source of dispersants (meaning any output files will treat any part of the burning landscape as one source instead of splitting them apart). It is assumed that the main dispersant that users may be interested in is PM2.5, so most program constants have been selected based on this assumptions. They have been made user-modifiable if a different pollutant is required. 
 
+Smoke calculations can be enabled by setting ENABLE\_SMOKE\_OUTPUTS = .TRUE. in the \&SMOKE namelist. Enabling this feature will result in the output of an additional smoke\_000001.csv file being generated, containing the simulation time in hours, the timestamp of the simulation, the x and y center of the burning area of that time interval (geometric center, does not get weighted by any parameter as was the case in previous versions), the total burned area of that time interval, the average HRR in MW and the average pollutant injection per hour. The center of the burning area is given in units related to the projection of the input geotiff rasters. 
+
+The dispersion is based on a simple calculation relating total energy released by the wildfire at time interval DT\_SMOKE\_OUTPUTS, energy released per kg of wood (used to estimate total burned mass, with a constant DRY\_WODD\_CALORIFIC\_VALUE = 19 MJ/kg, later adjusted by the 10-h fuel moisture content), and the pollutant released per kg of burned wood (PM\_EMISSION\_FACTOR\_FLAMING and PM\_EMISSION\_FACTOR\_SMOLDERING for the two burning phases). The total flaming and smoldering time (also referred to as residence time) can also be adjusted from their default values, using inputs FLAMING\_TIME and SMOLDERING\_TIME in seconds. 
+
+This module was made for use with external dispersion program, with HYSPLIT as a main example. For a better integration with HYSPLIT, the EMITIMES.txt file can be written directly by ELMFIRE. EMITIMES.txt is used to specify complex, transient or moving sources, all three of which are the case with an evolving fire front. To generate this file, set DUMP\_EMITIMES = .TRUE. in the \&OUTPUTS namelist.
+
+\subsection{Running HYSPLIT}
+
+In the examples/ folder we have provided a set of helper scripts to run elmfire simulations, whose outputs can be used to run HYSPLIT. HYSPLIT requires the following files to run a simulation:
+
+\begin{itemize}
+    \item SETUP: global simulation settings
+    \item EMITIMES.txt: emission and fire size entries per hour
+    \item CONTROL: specific simulation parameters
+    \item ASCDATA.CFG: simulation domain config file 
+\end{itemize}
+
+The examples/smokeHelpers/elmfire2hysplit.py file helps prepare all the needed files for a HYSPLIT run, based on an ELMFIRE simulation. The helper script creates the CONTROL, SETUP, ASCDATA.CFG files with some baseline options setup. Advanced users are free to change these values. The helper file also automatically downloads the weather files required by HYSPLIT that describe the global composition of the atmosphere (weekly GDAS1). The standard source of these files is US NOAA. 
+
+The simulation is then run automatically via examples/smoke/elmfire\_hysplit.sh, which handles everything from running the ELMFIRE simulation, setting up the necessary folders, and running HYSPLIT. The final files are in a binary format that is difficult to use, and to help convert them to a format that is more friendly to GIS systems, bin2nc.py is provided. It converts the smoke.bin output to smoke.nc, which can then be opened with programs like QGIS. bin2nc.py is automatically run within elmfire\_hysplit.py. 
+
+smoke.nc can then be imported directly to GIS applications. With QGIS, specifically, two features will be imported, one with individual smoke raster bands, and one with no bands and just a premade colormap of PM2.5 concentration in $\mu g/m^3$. This file is already temporally enables, and Temporal Controller can be used to scroll through the simulation daterange. 
+
+
+\section{Memory Optimization}
+\label{memopt}
+
+ELMFIRE has been developed from the start to be a fast wildfire spread model, with great parallel processing and monte-carlo processing capabilities. These capabilities require that all data is loaded in memory at the start of model calculations. For the majority of cases there is no issue with this setup, but for cases with larger rasters and longer run times (in the order of 2000 x 2000 points and 800 hours or above), RAM usage can reach 60 GB and be unsustainable for many systems. The problem stems from the need to load all temporal data in memory at once, with larger rasters requiring 150 MB of RAM per weather band. 
+
+To reduce the RAM usage of ELMFIRE, a MEMOPT version of the code has been developed that requires far less RAM resources to run, for the price of longer run times. ELMFIRE-MEMOPT only loads part of the temporal weather rasters in memory at a time. Once all processes/simulations are finished with the current weather band range, a new one is loaded. This can bring the RAM requirement of a large simulation down from 60 GB to 5 GB, and increase the simulation run time by 10 \% (depending on the case). The switch that controls how many weather bands are loaded at a time is WX\_BANDS\_KEPT\_IN\_MEM, in the \&SIMULATOR namelist. A standard value of 30 has been set as standard based on a balance of runtime and RAM usage. 
 
 \section{Process Flowchart}
 
@@ -1097,27 +1216,27 @@ ELMFIRE Workflow:
 \begin{enumerate}
     \item Setup variables
     \item Setup MPI
-    \item Read and check input file
+    \item Read and check input files
     \item Set randomizer seed
     \item Calculate sunrise and sunset times
     \item Calculate and save lookup tables (for easy/fast access)
-    \item Read headers of fuels \& topography
+    \item Read headers of weather, fuels \& topography
     \item Read weather, fuels \& topography raster data
     \item Determine number of cases to run
     \item Rotate wind if GRID\_DECLINATION
     \item If pyromes are used, parse adjustment factors
-    \item Remap the input grids (coarse) to the simulation cellsize (fine)
-    \item Allocate additional intermediate rasters (outputs, intermediate rasters etc.)
+    \item Remap the weather input grids (coarse) to the simulation cellsize (fine)
+    \item Allocate memory for additional rasters (outputs, intermediate rasters etc.)
     \item (if Random Ignitions) Determine ignition locations
-    \item Allocate output rasters
-    \item If in fire potential mode (MODE = 2 or 3)
+    \item Allocate memory for output rasters
+    \item If in fire potential mode (MODE = 2 or 3):
     \begin{enumerate}
         \item Initialize spread output rasters
         \item Keep track of all burnable cells (burnable fuel types and outside of Edgebuffer range) 
         \item For each weather band:
         \begin{enumerate}
             \item Calculate surface and crown spread rates
-            \item Check surface flame length, if high enough then keep max spread of surface and crown.
+            \item Check surface flame length, if high enough then apply crown fire calculations.
             \item Output spread raster values
         \end{enumerate}
     \end{enumerate}
@@ -1132,31 +1251,34 @@ ELMFIRE Workflow:
 \end{enumerate}
 
 Main level set propagation algorithm:
+
+Since the first Memory Optimisation (MEMOPT) version of ELMFIRE, the structure of the level set method has been changed to:
 \begin{enumerate}
-    \item Determine simulation stop time
-    \item If its the first time level set is called:
-    \begin{enumerate}
-        \item Allocate intermediate rasters
-        \item Determine output time interval
-        \item Allocate output rasters
-        \item Set pointer addresses
-    \end{enumerate}
-    \item If random ignitions are on:
-    \begin{enumerate}
-        \item Set ignition location
-        \item Adjust simulation time and suppression parameters through Pyrome
-        \item Exclude and set outputs if nonburnable cell is selected for ignition
-    \end{enumerate}
-    \item Check that weather band exists for this time step
-    \item Initialize weather, suppression, point list variables
-    \item If random ignitions are not enabled:
-    \begin{enumerate}
-        \item Check each landscape point for $\phi < 0$, set as burning, and set initial weather parameters
-        \item Calculate surface and crown rates of spread for all points currently burning
-        \item Calculate front normal vectors, calculate X and Y ROS components
-        \item Check for eligible fire spread cells within fire front BANDTHICKNESS
-    \end{enumerate}
-    \item Start the main loop:
+    \item Check if new weather band range is needed and update weather band range loaded in memory
+    \item If ignition time is reached:
+        \begin{enumerate}
+            \item Determine simulation stop time
+            \item Allocate intermediate rasters
+            \item Determine output time interval
+            \item Allocate output rasters
+            \item Set pointer addresses
+            \item If random ignitions are on:
+            \begin{enumerate}
+                \item Set ignition location
+                \item Adjust simulation time and suppression parameters through Pyrome
+                \item Exclude and set outputs if nonburnable cell is selected for ignition
+            \end{enumerate}
+            \item Check that weather band exists for this time step
+            \item Initialize weather, suppression, point list variables
+            \item If random ignitions are not enabled:
+            \begin{enumerate}
+                \item Check each landscape point for $\phi < 0$, set as burning, and set initial weather parameters
+                \item Calculate surface and crown rates of spread for all points currently burning
+                \item Calculate front normal vectors, calculate X and Y ROS components
+                \item Check for eligible fire spread cells within fire front BANDTHICKNESS
+            \end{enumerate}
+        \end{enumerate}
+    \item Start the main loop until stop condition is reached:
     \begin{enumerate}
         \item If applicable, calculate overnight adjustment factor time span
         \item If random ignitions are on, set $\phi$ of ignition point to zero and save potential spread points.
@@ -1167,6 +1289,7 @@ Main level set propagation algorithm:
         \item Calculate crown spread rate
         \item Calculate components of normal vectors of fire front
         \item Calculate Ux and Uy velocity components
+        \item If FLIN is high enough for crown fire, apply results of crown spread rate to total.
         \item Calculate new time step with CFL and Flux limiter
         \item Integrate level set equations with Runge Kutta 2nd order
         \item Update burning point values and statistics
@@ -1182,10 +1305,14 @@ Main level set propagation algorithm:
         \item Calculate extended attack containment
         \item Dump main outputs
     \end{enumerate}
-    \item Process and output timed location data (does not apply to newer versions).
-    \item Calculate and output fire size statistics
-    \item If applicable, dump binary outputs
-    \item If applicable, dump ember count bin measurements.
+    \item Advance simulation time
+    \item If simulation stop time has been reached:
+    \begin{enumerate}
+        \item Process and output timed location data (does not apply to newer versions).
+        \item Calculate and output fire size statistics
+        \item If applicable, dump binary outputs
+        \item If applicable, dump ember count bin measurements.
+    \end{enumerate}
 \end{enumerate}
 
 
