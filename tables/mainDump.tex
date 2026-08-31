@@ -1,5 +1,6 @@
 \begin{cfTable}{The main dump routine outputs of ELMFIRE.}{tab:main_dump}{1.0\textwidth}
 \begin{tabular}{lp{4cm}lll}
+\specialrule{1.2pt}{0pt}{0pt}
 \multicolumn{5}{c}{MAIN DUMP ROUTINE}                                                                                                 \\
 Option                     & Description                                              & Units                    & Type   & Output    \\
 \specialrule{1.2pt}{0pt}{0pt}
@@ -9,20 +10,24 @@ DUMP\_CROWN\_FIRE          & Status of crown fire (0 = none, 1 = passive, 2 = ac
 DUMP\_CRITICAL\_FLIN       & Surface Fireline intensity required for crown fire ignition & kW/m                  & Raster & Final     \\
 DUMP\_SPREAD\_RATE         & Rate of Spread Magnitude                                 & ft/min                   & Raster & Final     \\
 DUMP\_SPREAD\_DIRECTION    & Rate of Spread Direction                                 & degrees                  & Raster & Final     \\
-DUMP\_HPUA                 & Heat per unit area                                       & kJ/m\textasciicircum{}2  & Raster & Final     \\
+DUMP\_HPUA                 & Heat per unit area                                       & kJ/$m^2$                 & Raster & Final     \\
 DUMP\_FLIN                 & Fireline Intensity                                       & kW/m                     & Raster & Final     \\
 DUMP\_FLAME\_LENGTH        & Flame Length                                             & ft                       & Raster & Final     \\
-DUMP\_REACTION\_INTENSITY  & Reaction intensity                                       & kW/m\textasciicircum{}2  & Raster & Final     \\
+DUMP\_REACTION\_INTENSITY  & Reaction intensity                                       & kW/$m^2$                 & Raster & Final     \\
 DUMP\_WS20                 & Wind speed                                               &                          & Raster & Transient \\
 DUMP\_WD20                 & Wind direction                                           & degrees                  & Raster & Transient \\
 DUMP\_VELOCITY             & Rate of Spread                                           & ft/min                   & Raster & Final     \\
 DUMP\_TIME\_OF\_ARRIVAL    & Fire arrival time                                        & s                        & Raster & Final     \\
-DUMP\_TOTAL\_DFC\_RECEIVED &                                                          &                          &        &           \\
-DUMP\_TOTAL\_RAD\_RECEIVED &                                                          &                          &        &           \\
-DUMP\_HRR\_TRANSIENT       &                                                          &                          &        &           \\
+DUMP\_TOTAL\_DFC\_RECEIVED & Accumulated heat flux due to direct flame contact (WU-E) & kJ/$m^2$                 & Raster & Final \\
+DUMP\_TOTAL\_RAD\_RECEIVED & Accumulated heat flux due to radiation (WU-E)            & kJ/$m^2$                 & Raster & Final \\
+DUMP\_TRANSIENT\_DFC         & Transient DFC heat flux (WU-E)                           & kW/$m^2$                 & Raster & Transient \\
+DUMP\_TRANSIENT\_RAD         & Transient radiation heat flux (WU-E)                     & kW/$m^2$                 & Raster & Transient \\
+DUMP\_HRR\_TRANSIENT       & Transient heat release rate per unit area                & kW/$m^2$                 & Raster & Transient \\
 DUMP\_TAGGED               & Show currently 'Tagged' Cells (1 = Tagged)               & Categorical              & Raster & Transient \\
 DUMP\_PHI                  & Level set phi variable                                   & -                        & Raster & Transient \\
-DUMP\_EMBER\_FLUX          &                                                          &                          &        &           \\
-DUMP\_SPOTTING\_OUTPUTS    & Ember spatial and temporal travel data                   & coordinates, s           & CSV    & Final    
+DUMP\_EMBER\_FLUX          & Accumulated ember flux per Monte-Carlo ensemble          & pieces/$m^2$             & Raster & Final \\
+DUMP\_EMBER\_FLUX\_TRANSIENT & Transient ember flux at the moment                     & pieces/$m^2$             & Raster & Transient  \\
+DUMP\_SPOTTING\_OUTPUTS    & Ember spatial and temporal travel data                   & coordinates, s           & CSV    & Final    \\
+\specialrule{1.2pt}{0pt}{0pt}
 \end{tabular}
 \end{cfTable}

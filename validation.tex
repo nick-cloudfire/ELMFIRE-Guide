@@ -4,19 +4,55 @@ ASTM E1355 Standard Guide for Evaluating the Predictive Capability of Determinis
 
 Obtaining the input data required for validation case studies is a cumbersome process, resulting in most models being validated against one or two fires. In many cases, historic fires are picked that the model performs well in. Some models even use optimisation and parameterisation against the historic fire they use as validation, to prove that the model has the capability of producing accurate results. This, coupled with the fact that each model chooses different historic fires and different validation metrics, makes actual validation of wildfire spread models and comparison between them almost impossible. 
 
-To this end, Wildfire AV has been developed, the first publically available, large scale, historic wildfire validation pipeline (https://github.com/nick-cloudfire/WildfireAV). WildfireAV generates a large number of historic wildfire cases, and the input parameters required to simulate them. The pipeline creates the input files, runs ELMFIRE automatically, compares each simulation to the actual burn scar, computes similarity scores and compiles all the cases into sets for data analysis. 
+To this end, Wildfire AV has been developed, the first publically available, large scale, historic wildfire validation pipeline (https://github.com/nick-cloudfire/WildfireAV). WildfireAV generates a large number of historic wildfire cases, and the input parameters required to simulate them. The pipeline creates the input files, runs ELMFIRE automatically, compares each simulation to the actual burn scar, computes similarity scores and compiles all the cases into sets for data analysis. A detailed explanation of the database, its sources, and its capabilities and limitations has been submitted for publication. 
 
-The complete validation PDF report, comparing both ELMFIRE and FARSITE, has been included in the validation/ folder. 
+The complete validation PDF report, comparing both ELMFIRE and FARSITE (to provide an established metric for comparison), has been included in the validation/ folder. The results are summarised here. All the results below use simple fire spread with canopy effects, no firebrands, barriers, no suppression. 
+
+Overall, ELMFIRE seems to have a more balanced output with regards to over- or underestimation of total fire area compared to Farsite, which may be attributed to its breaching criterion (Farsite hard stops fire spread at barriers). 
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.75\linewidth]{figs/WAV_bias.png}
+    \caption{A bias estimation plot, with the over- and underestimation of each case plotted (through simple total area comparisons.}
+    \label{fig:WAV_bias}
+\end{figure}
+
+In terms of overall similarity score, ELMFIRE and Farsite obtain broadly similar scores, with ELMFIRE having a mean Jaccard coefficient of 0.178, a mean Sorensen Coefficient of 0.278 and a mean Cohen's kappa of 0.241. THe equivalent Farsite values are 0.176, 0.274 and 0.249. The distributions also look similar, with the elmfire curves generally skewing towards greater bulk similarity indices. 
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=1\linewidth]{figs/WAV_similarities.png}
+    \caption{The similarity coefficient histograms of ELMFIRE and Farsite, with mean and median values superimposed.}
+    \label{fig:WAV_similarities}
+\end{figure}
+
+A sample fire output is given below. For clarity, the chosen wildfire is the most accurate fire (according to its Jaccard similarity) for ELMFIRE, and shows the advantage of a conditional breaching criterion. All wildfire cases are accompanied with such a figure. 
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=1\linewidth]{figs/WAV_amargo.png}
+    \caption{An exmaple output of a WildfireAV case, in this case the 2021 Amargo fire, the best performing ELMFIRE simulation.}
+    \label{fig:WAV_amargo}
+\end{figure}
+
+Finally, for completeness, below are the top and bottom performing wildfire simulations of the dataset.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=1\linewidth]{figs/WAV_tops.png}
+    \caption{The top and bottom 10 performing simulations for each model. See the full report for analytical results.}
+    \label{fig:WAV_tops}
+\end{figure}
 
 \section{Canada: Dogrib Fire}
 
-The Dogrib Fire is the standard provided validation case of the Prometheus program, the main CFFDRS fire spread model implementation \cite{tymstra_development_2010}. The Dogrib fire (ID RWF085) ignited on September 25th 2001 with two main growth spurts. The first growth spurt occured between ignition and October 4th, at which point the fire was classified under control. On October 16th a wind event caused a major fire run, significantly increasing the total area of the fire. The second growth spurt of the fire was the focus of the Prometheus validation, and has been recreated in ELMFIRE for the purposes of comparing the outputs of the ELMFIRE CFFDRS implementation and the real fire / Prometheus prediction. The simulation will focus on the fire spread between October 16th 13:00 local time and 19:42 local time (specified as scenario 2 in the Prometheus validation document). 
+The Dogrib Fire is the standard provided validation case of the Prometheus program, the main CFFDRS fire spread model implementation \cite{tymstraDevelopmentStructurePrometheus2010}. The Dogrib fire (ID RWF085) ignited on September 25th 2001 with two main growth spurts. The first growth spurt occured between ignition and October 4th, at which point the fire was classified under control. On October 16th a wind event caused a major fire run, significantly increasing the total area of the fire. The second growth spurt of the fire was the focus of the Prometheus validation, shown in Fig. \ref{fig:dogribRealFire}, and has been recreated in ELMFIRE for the purposes of comparing the outputs of the ELMFIRE CFFDRS implementation and the real fire / Prometheus prediction. The simulation will focus on the fire spread between October 16th 13:00 local time and 19:42 local time (specified as scenario 2 in the Prometheus validation document). 
 
 \begin{figure}
     \centering
     \includegraphics[width=0.8\linewidth]{figs/dogrib_real_fire.png}
     \caption{The extent and propagation of the 2001 Dogrib fire. Figure taken from the Prometheus validation supporting document "Case study information pertaining to the Dogrib sample dataset for Prometheus" by Neal McLoughlin, last revised February 3rd 2019}
-    \label{fig:placeholder}
+    \label{fig:dogribRealFire}
 \end{figure}
 
 The supporting document of the Prometheus verification (that can be found in the Prometheus online distribution) describe the Dogrib fire extensively, along with the input data and parameters used in the simulation. The simulation used four wind scenarios:
@@ -51,37 +87,37 @@ The following input parameters were given in the Prometheus case but had to be c
     \item FWI Interpolation: The dogrib simulation provided with the Prometheus installation is ran with the Lawson diurnal FWI interpolation model. The Lawson model interpolates hourly fine fuel moisture code (HFFMC) and Hourly Initial Spread Index (HISI), the two most critical parameters of fire spread, from a diurnal drying and wetting profile, using the daily midday weather values. The alternative method is the Van Wagner method which relies on hourly weather values to calculate the HFFMC and HISI. The two methods offer advantages and disadvantages in their application and accuracy; their main difference is that Lawson produces a strong diurnal cooling effect whereas Van Wagner has a weak nighttime cooling effect. In the Dogrib simulation of ELMFIRE, the Lawson model is used, but ELMFIRE can only implement the Van Wagner model. As such, the simulation that is used here to represent the results of Prometheus were rerun with the Van Wagner interpolation model, to make the comparison more straightforward. 
 \end{itemize}
 
-The results of the Prometheus and ELMFIRE simulation show that ELMFIRE predicts significantly smaller fire size than Prometheus, and both models underpredict the extent of the fire. Focusing on the discrepancy between ELMFIRE and Prometheus, the difference between the two predictions can be condensed to the way the two models propagate the fire in 2D. 
+The results of the Prometheus and ELMFIRE simulation are presented in Fig. \ref{fig:dogribSimResults} and show that ELMFIRE predicts significantly smaller fire size than Prometheus, and both models underpredict the extent of the fire. Focusing on the discrepancy between ELMFIRE and Prometheus, the difference between the two predictions can be condensed to the way the two models propagate the fire in 2D. 
 
-\begin{figure}
+\begin{figure}[h]
     \centering
     \includegraphics[width=0.95\linewidth]{figs/dogrib.png}
     \caption{The burn scars of ELMFIRE and Prometheus for the Dogrib fire with identical / parsed input parameters.}
-    \label{fig:placeholder}
+    \label{fig:dogribSimResults}
 \end{figure}
 
-Take the example given in table 3 or the 2009 FBP Update document \cite{wotton_updates_2009}. For a fire with head fire rate of spread of 17.46 m/min, and a Length-to-breadth ratio of 1.98 (referring to the length to breadth ratio of the elliptical fire spread from a point source. The original document predicts a backwards rate of spread of 2.16 m/min, using the FBP methodology. ELMFIRE uses the updated methododology employed in Farsite to calculate the rate of spread in any direction. It specifically calculates the backwards rate of spread through:
+Take the example given in table 3 or the 2009 FBP Update document \cite{wottonUpdatesRevisions19922009}. For a fire with head fire rate of spread of 17.46 m/min, and a Length-to-breadth ratio of 1.98 (referring to the length to breadth ratio of the elliptical fire spread from a point source. The original document predicts a backwards rate of spread of 2.16 m/min, using the FBP methodology. ELMFIRE uses the updated methododology employed in Farsite to calculate the rate of spread in any direction. It specifically calculates the backwards rate of spread through:
 
 \[
 ROS_b=ROS\frac{LOW-\sqrt{LOW^2-1}}{LOW+\sqrt{LOW^2-1}}
 \]
 
-Plugging in the values from the update document yields a value of 1.29 m/min. This behavior can be considered a universal property of ELMFIRE and a key driver of the difference between it and Prometheus. In the dogrib simulations, a critical component of the fire spread is the transverse travel of the fire over and across the landscape ridges. Before the fire crosses the river, in particular, it has to spread on a 60 degree downhill, which would produce drastically different rates of spread. A comparison of multiple models in the literature \cite{kalogeropoulos_wildfire_2025} shows that different models treat point sources with different elliptical shapes and dimensions, and the ellipses of ELMFIRE and Prometheus are particularly different in their flank and backfires. 
+Plugging in the values from the update document yields a value of 1.29 m/min. This behavior can be considered a universal property of ELMFIRE and a key driver of the difference between it and Prometheus. In the dogrib simulations, a critical component of the fire spread is the transverse travel of the fire over and across the landscape ridges. Before the fire crosses the river, in particular, it has to spread on a 60 degree downhill, shown in Fig. \ref{fig:dogribCliff}, which would produce drastically different rates of spread. A comparison of multiple models in the literature \cite{kalogeropoulosWildfireSimulationsProtect2025} shows that different models treat point sources with different elliptical shapes and dimensions, and the ellipses of ELMFIRE and Prometheus are particularly different in their flank and backfires. 
 
 \begin{figure}
     \centering
     \includegraphics[width=0.75\linewidth]{figs/dogrib_cliff.png}
     \caption{The 60 degree downhill part of fire spread shown in Google Earth. It is highly likely that the fire spread of the real fire was assisted and accelerated by firebrands travelling from the top of the hill to the valley below and beyond the river. However, firebrand-assisted propagation is already reflected in the CFFDRS spread rate regressions, and as such should not be activated in ELMFIRE.}
-    \label{fig:placeholder}
+    \label{fig:dogribCliff}
 \end{figure}
 
-To further investigate this, the Dogrib simulations were repeated, with terrain effects turned off, meaning the elevation was changed to a constant value, and the slope and aspect were both set to zero. The results show that, with only the wind pushing the fire, and thus the burn extent primarily depending on the head fire spread rate, the results are near identical (barring differences in flank fire). 
+To further investigate this, the Dogrib simulations were repeated, with terrain effects turned off, meaning the elevation was changed to a constant value, and the slope and aspect were both set to zero. The results depicted in Fig. \ref{fig:dogribFlatSim} show that, with only the wind pushing the fire, and thus the burn extent primarily depending on the head fire spread rate, the results are near identical (barring differences in flank fire). 
 
-\begin{figure}
+\begin{figure}[h]
     \centering
     \includegraphics[width=0.95\linewidth]{figs/dogrib_flat.png}
     \caption{The Dogrib simulation case with flat terrain. Only the wind affects the fire spread direction and magnitude.}
-    \label{fig:placeholder}
+    \label{fig:dogribFlatSim}
 \end{figure}
 
 With the above results, it is clear that ELMFIRE and Prometheus may produce different results, because of how they treat topography and wind interactions, with regards to spread rates and directional spread rate interpolation. Despite this result, the above simulations show that ELMFIRE is capable of producing similar outputs to Prometheus, closely approximating the behavior of real fires. 

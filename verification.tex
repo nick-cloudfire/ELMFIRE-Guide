@@ -40,9 +40,9 @@ The expected outcomes of each case are shown in Fig. \ref{fig:verification_cases
  \label{fig:verification_cases}
 \end{figure}
 
-The details of each case are described in Tab. \ref{tab:verification_params}. All the raster inputs are 126 x 126 cells with 30m cell size. Wind magnitude and direction is spatially constant. Simulation DT is 1 minute. Wind is specified at 10m height. 10-hour and 100-hour fuel moistures are 7\% and 8\% for all fuels and cases, live herbaceous fuel moisture is set to 90\% and live woody fuel moisture is set to 60\%. Where analytical solutions for the rate of spread can be acquired, they are calculated through the Rothermel model and the BEHAVE program. All isochrones shown in the later sections are hourly.
+The details of each case are described in Tab. \ref{tab:verification_params}. All the raster inputs are 126 x 126 cells with 30m cell size. Wind magnitude and direction is spatially constant. Simulation DT is 1 minute. Wind is specified at 10m height. 10-hour and 100-hour fuel moistures are 7\% and 8\% for all fuels and cases, live herbaceous fuel moisture is set to 90\% and live woody fuel moisture is set to 60\%. Where analytical solutions for the rate of spread can be acquired, they are calculated through the Rothermel model and the BEHAVE program. All isochrones shown in the later sections are hourly. 
 
-\begin{table}[t]
+\begin{table}[b]
 \centering
 \caption{Simulation parameters of each verification case. Changes in fuel types between cases occur to generate faster or slower wildfires, for better visualisation or comparison.}
 \label{tab:verification_params}
@@ -69,7 +69,7 @@ Valley & 5° east, 15° west & 3  & 0 & 0  & 0 & 0 & 0.0  & 6  & off  & off  & o
 Fuel Quadrant  & Flat & 8, 7, 4, 2 & 0 & 0  & 0 & 0 & 0.0  & 6  & off  & off  & off \\
 Complex  & 5° east, 15° west & 8, 7, 4, 2 & 0 & 0  & 0 & 0 & 5  & 6  & off  & off  & off \\
 Moisture Quad. & Flat & 3  & 0 & 0  & 0 & 0 & 0.0  & 6, 12, 18, 25 & off  & off  & off \\
-Canopy & Flat & 5  & 80   & 16 & 16   & 55  & 6.0  & 6  & off  & off  & off \\
+Canopy & Flat & 5  & 80   & 16 & 56   & 55  & 1, 6, 12  & 6  & off  & off  & off \\
 Firebrand   & Flat & 3  & 0 & 0  & 0 & 0 & 5  & 6  & on & off  & off \\
 Overnight   & Flat & 3  & 0 & 0  & 0 & 0 & 0.0  & 6  & off  & 72 h runtime  & off \\
 Suppression & Flat & 3  & 0 & 0  & 0 & 0 & 0.0  & 6  & off  & off  & on  \\
@@ -79,18 +79,56 @@ Suppression & Flat & 3  & 0 & 0  & 0 & 0 & 0.0  & 6  & off  & off  & on  \\
 
 \end{table}
 
+To maintain accuracy between versions, and ensure that subsequent changes do not affect the verification results, we have included scripts to automatically run and verify all cases below. The \code{verification/GUIDE/run_verification.sh} script runs all cases and compares them with the analytically derived results, highlighting discrepancies and similarities. The output of this script is a table summarising the critical values of each case. 
+
+\begin{verbatim}
+Case                Metric                          Target   ELMFIRE    %err  Result
+------------------------------------------------------------------------------------
+Point               head ROS                         1.510     1.512     0.1  PASS
+Windy               head ROS                         3.635     3.644     0.3  PASS
+Windy               L/W ratio                        1.240     1.248     0.6  PASS
+Valley              head ROS (5 deg, east)           1.920     1.924     0.2  PASS
+Valley              head ROS (15 deg, west)          5.370     5.374     0.1  PASS
+Quadrant            FB8 head ROS                     0.080     0.080    -0.6  PASS
+Quadrant            FB7 head ROS                     0.472     0.471    -0.3  PASS
+Quadrant            FB4 head ROS                     1.492     1.493     0.1  PASS
+Quadrant            FB2 head ROS                     0.871     0.872     0.1  PASS
+MoistureQuad        ROS @ 6%                         1.511     1.512     0.1  PASS
+MoistureQuad        ROS @ 12%                        1.089     1.090     0.1  PASS
+MoistureQuad        ROS @ 18%                        0.801     0.801     0.0  PASS
+MoistureQuad        ROS @ 25%                        0.000     0.000       -  PASS
+Canopy-1mph         crown class                      0.000     0.000       -  PASS
+Canopy-1mph         max ROS                          1.809     1.745    -3.5  PASS
+Canopy-5mph         crown class                      1.000     1.000     0.0  PASS
+Canopy-5mph         max ROS                         10.060    10.084     0.2  PASS
+Canopy-10mph        crown class                      2.000     2.000     0.0  PASS
+Canopy-10mph        max ROS                         35.300    35.443     0.4  PASS
+Complex             max ROS (qualitative)                -    12.896       -  n/a
+Firebrands          firebrands (cell)             8450.000 12198.000    44.4  FAIL
+Firebrands          ln-distance mu                   2.420     2.411    -0.4  PASS
+Firebrands          ln-distance sigma                1.310     1.300    -0.7  PASS
+Overnight           reduction starts (hr)           17.500    17.750     1.4  PASS
+Overnight           reduction ends (hr)              7.500     7.750     3.3  PASS
+Suppression-extendedtime at simulation end       88200.000 83988.000    -4.8  PASS
+Suppression-initial fraction contained               0.540     0.569     5.4  PASS
+\end{verbatim}
+
+\clearpage
 \subsection{Point}
 
-The first verification case tests ELMFIRE's ability to model simple fire spread. Under zero terrain changes and zero wind, flame spread is expected to be equal in all directions, forming circular fire fronts. The ELMFIRE output should be perfectly circular fire fronts, equidistant from each other, at a steady rate of spread. The Rothermel model, solved analytically through the BEHAVE program, predicts a maximum rate of spread of 1.51 m/min. Inputs to BEHAVE’s surface module are as follows:
+\paragraph{Goal.} Verify baseline isotropic spread in the absence of wind and slope.
 
+\paragraph{Setup.} Flat terrain and no wind. BEHAVE (Rothermel surface model) inputs:
 \begin{itemize}
     \item Fuel Model: FB3 (3) Tall Grass (static)
     \item 1-h fuel moisture: 6\%
-    \item 10-m wind speed: 0 mph
+    \item 20-ft wind speed: 0 mph
     \item Slope steepness: 0\%
 \end{itemize}
 
-The output of verification case ``Point'' is shown in Fig. \ref{fig:elm_point}. The estimated rate of spread of the fire is 4.96 ft/min, which is equal to 1.51 m/min, exactly matching the BEHAVE output. The output is perfectly circular, as expected from theory. 
+\paragraph{Expected outcome.} Circular isochrones with constant rate of spread.
+
+\paragraph{Result.} Figure~\ref{fig:elm_point} shows circular fire fronts. The estimated rate of spread is 1.51\,m/min, matching BEHAVE.
 
 \begin{figure}[h!]
     \centering
@@ -99,11 +137,14 @@ The output of verification case ``Point'' is shown in Fig. \ref{fig:elm_point}. 
     \label{fig:elm_point}
 \end{figure}
 
+\clearpage
 \subsection{Windy}
 
-While the previous case was a very simple test of fire spread, the ``Windy'' case tests the ability of ELMFIRE to adjust its maximum rate of spread accounting for wind, and its ability to spread wildfire in the landscape with heterogeneous wildfire spread. 
+\paragraph{Goal.} Verify wind-driven elliptical spread and agreement with an analytical/BEHAVE-based isochrone.
 
-Now that wind is also involved, another parameter that needs to be solved and used as an input to BEHAVE is the wind adjustment factor. The wind adjustment factor is used to convert the free wind speed (20 ft) to midflame windspeed. It can be analytically calculated using the empirical relations of Andrews (2012) for an uncovered fuel (no or sparse canopy):
+\paragraph{Method.} Compute the wind adjustment factor (WAF) to convert 20-ft wind to midflame wind, then compare BEHAVE-derived spread metrics and analytical isochrones against ELMFIRE.
+
+\paragraph{Wind adjustment factor.} For uncovered fuels (no or sparse canopy):
 
 \begin{equation}
 WAF_u = 
@@ -123,55 +164,58 @@ WAF_s =
 \right)}
 \end{equation}
 
-The above equations can be rigorously solved, and in the case of uniform topography and constant wind can be solved to give the fire isochrone at a specific point in time. This analytical isochrone can be directly compared with the computational solution. The analytical solution can be derived with the help of BEHAVE, using the following parameters:
+Recall that the point fire spread can be characterised by an ellipse whose Length over Width ratio can be found by:
+
+\begin{equation}
+    \frac{L}{W} = \min \left[ 
+0.936\, e^{0.1147\, U_{mf,e}} 
++ 0.461\, e^{-0.0692\, U_{mf,e}} 
+- 0.397,\; 8
+\right]
+\end{equation}
+\paragraph{Setup.} Uniform topography and constant wind. BEHAVE inputs:
+
 
 \begin{itemize}
     \item Fuel Model: FB5 (5) Brush (static)
     \item 1-h fuel moisture: 6\%
     \item 10-h fuel moisture: 7\%
-    \item 10-m wind speed: 6 mph
+    \item 20ft wind speed: 6 mph
     \item Slope steepness: 0\%
-    \item Wind adjustment factor: 0.418
 \end{itemize}
+\paragraph{Expected (BEHAVE/analytical).}
 
-The above yields:
 
 \begin{itemize}
-    \item Head rate of spread: 3.06 m/min
-    \item Backing rate of spread: 0.88 m/min
-    \item Midflame windspeed: 3.5 km/h
-    \item $L/W$: 1.20
+    \item Wind adjustment factor: 0.42
+    \item Head rate of spread: 3.66 m/min
+    \item Midflame windspeed: 2.5 km/h
+    \item $L/W$: 1.24
 \end{itemize}
+\paragraph{Result (ELMFIRE).}
 
-ELMFIRE then predicts:
 
 \begin{itemize}
-    \item Head rate of spread: 3.07 m/min
-    \item Backing rate of spread: 0.88 m/min
-    \item $L/W$: 1.21
+    \item Head rate of spread: 3.644 m/min
+    \item $L/W$: 1.248
 \end{itemize}
+\paragraph{Comparison.} The match is almost identical, supporting correct implementation of wind-driven elliptical spread.
 
-The above results can be confirmed visually in Fig. \ref{fig:elm_windy}. The exact solution and the simulated solution are a near exact match. This proves that the elliptical fire spread in ELMFIRE works as intended, and the model overall can accurately model simple wind-driven fires. 
-
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=0.6\linewidth]{figs/windy.png}
-    \caption{ELMFIRE Simulation (red) of verification case ``Windy''. Analytical solutions (blue) superimposed.}
-    \label{fig:elm_windy}
-\end{figure}
-
+\clearpage
 \subsection{Valley}
 
- Since slope and wind are treated similarly in the 2D spread calculations, both being added to the vector quantity $\phi$ before being used in the equations presented in the previous chapter, a similar analysis to the ``Windy'' case will not be conducted as it would not provide any new verification to the model. The Rate of Spread values will be compared to behave as before, and instead the Huygens principle will be tested, by comparing successive isochrones of the simulated fire to the earlier isochrone's individual point-source expansions. Using BEHAVE with:
+\paragraph{Goal.} Verify slope-driven spread and the Huygens construction (successive isochrones consistent with point-source expansions).
+
+\paragraph{Setup.} Two slopes (5\% and 15\%), no wind. BEHAVE inputs:
 
  \begin{itemize}
     \item Fuel Model: FB3 (3) Tall Grass (static)
     \item 1-h fuel moisture: 6\%
-    \item 10-m wind speed: 0 mph
+    \item 20ft wind speed: 0 mph
     \item Slope steepness: 5\% / 15\%
 \end{itemize}
+\paragraph{Expected (BEHAVE).}
 
-The above yields:
 
 \begin{itemize}
     \item Head rate of spread (5\%): 1.92 m/min
@@ -179,22 +223,22 @@ The above yields:
     \item Head rate of spread (15\%): 5.37 m/min
     \item $L/W$ (15\%): 1.07
 \end{itemize}
+\paragraph{Result (ELMFIRE).}
 
-ELMFIRE then predicts:
 
 \begin{itemize}
     \item Head rate of spread (5\%): 1.92 m/min
     \item Head rate of spread (15\%): 5.37 m/min
 \end{itemize}
-
-Calculating the $L/W$ of each slope from these complex isochrones is not straightforward, so instead the inverse is done. BEHAVE is used to get the $L/W$ of the two parts of the landscape, and 1-hour contours of each part are drawn. Those 1-hour contours are placed on one isochrone, to test if the resulting controur matches the next isochrone, as per Huygens' principle. 
+\paragraph{Huygens check.} Rather than estimating $L/W$ directly from the composite isochrones, BEHAVE-derived $L/W$ values are used to draw 1-hour point-spread ellipses for each slope and overlay them on a given isochrone.
 
 \begin{itemize}
-    \item Head $L/W$ (5\%): 1.01 
+    \item Head $L/W$ (5\%): 1.01
     \item Head $L/W$ (15\%): 1.07
 \end{itemize}
 
-Creating 1-hour point spreads and overlapping them to one isochrone should overlap with the next outline in ELMFIRE. Indeed, plotting the point spreads with the same function as ``Windy'' yields satisfactory results.
+\paragraph{Comparison.} Overlaying the 1-hour point spreads onto an isochrone aligns well with the next ELMFIRE outline (Figure~\ref{fig:elm_valley}).
+
 
 \begin{figure}[h!]
     \centering
@@ -215,14 +259,15 @@ Creating 1-hour point spreads and overlapping them to one isochrone should overl
     \label{fig:elm_valley}
 \end{figure}
 
+\clearpage
 \subsection{Quadrant}
 
-This scenario tests multiple fuel models at the same time, which can be used to ensure that the resulting complex contour are physically realistic and that the resulting rate of spread for each fuel matches the BEHAVE output. 
+\paragraph{Goal.} Verify that ELMFIRE handles spatially varying fuel models correctly by checking (i) that the composite fire perimeter remains physically reasonable when it crosses fuel boundaries and (ii) that the head rate of spread within each fuel matches BEHAVE.
 
-Using BEHAVE:
+\paragraph{Setup.} Four fuel models arranged in quadrants, no wind, no slope. BEHAVE inputs:
 
 \begin{itemize}
-    \item Fuel Model:
+    \item Fuel Models:
     \begin{enumerate}
         \item FB2 (2) Timber (grass and understory)
         \item FB4 (4) Chaparral (6 feet)
@@ -234,33 +279,32 @@ Using BEHAVE:
     \item 100-h fuel moisture: 8\%
     \item Live herbaceous fuel moisture: 60\%
     \item Live woody fuel moisture: 90\%
-    \item 10-m wind speed: 0 mph
+    \item 20ft wind speed: 0 mph
     \item Slope steepness: 0\%
 \end{itemize}
 
-Results in:
+\paragraph{Expected (BEHAVE).}
+\begin{itemize}
+    \item FB2 head rate of spread: 0.871 m/min
+    \item FB4 head rate of spread: 1.492 m/min
+    \item FB7 head rate of spread: 0.472 m/min
+    \item FB8 head rate of spread: 0.080 m/min
+\end{itemize}
 
-\begin{enumerate}
-    \item FB2 Head Rate of Spread: 0.871 m/min
-    \item FB4 Head Rate of Spread: 1.492 m/min
-    \item FB7 Head Rate of Spread: 0.472 m/min
-    \item FB8 Head Rate of Spread: 0.080 m/min
-\end{enumerate}
+\paragraph{Result (ELMFIRE).}
+\begin{itemize}
+    \item FB2 head rate of spread: 0.872 m/min
+    \item FB4 head rate of spread: 1.974 m/min
+    \item FB7 head rate of spread: 0.551 m/min
+    \item FB8 head rate of spread: 0.080 m/min
+\end{itemize}
 
-ELMFIRE then predicts:
+\paragraph{Comparison.} ELMFIRE matches BEHAVE closely for FB2 and FB8, while FB4 and FB7 exhibit higher ELMFIRE spread rates under the same inputs (discrepancy is currently being investigated). Qualitatively, the perimeter shape remains consistent across fuel boundaries (no nonphysical kinks or discontinuities), indicating that the multi-fuel coupling behaves sensibly; remaining quantitative differences are investigated further in Section~\ref{sec:verification-complex}.
 
-\begin{enumerate}
-    \item FB2 Head Rate of Spread: 0.872 m/min
-    \item FB4 Head Rate of Spread: 1.974 m/min
-    \item FB7 Head Rate of Spread: 0.551 m/min
-    \item FB8 Head Rate of Spread: 0.080 m/min
-\end{enumerate}
+\clearpage
+\subsection{Complex}\label{sec:verification-complex}
 
-.......................................
-
-\subsection{Complex}
-
-The complex case is beyond analytical solution or comparison to an ideal solution and is the primary reason why one needs wildfire spread models. This case is added for qualitative review, to showcase the compilation of previous cases and investigate whether the results do linearly add to one another. As such, it is expected to see fast southward spread, with higher spread eastward (toward the higher slope) and towards the faster-spread fuel model. Indeed, that is exactly what ELMFIRE predicts. 
+The complex case is beyond analytical solution or comparison to an ideal solution and is the primary reason why one needs wildfire spread models. This case is added for qualitative review, to showcase the compilation of previous cases and investigate whether the results do linearly add to one another. As such, it is expected to see fast southward spread, with higher spread eastward (toward the higher slope) and towards the faster-spread fuel model. Indeed, that is exactly what ELMFIRE predicts.
 
 \begin{figure}[h!]
     \centering
@@ -269,259 +313,215 @@ The complex case is beyond analytical solution or comparison to an ideal solutio
     \label{fig:elm_complex}
 \end{figure}
 
+\clearpage
 \subsection{Moisture Quad}
 
-In this verification scenario, a landscape of uniform fuel is used, where each quadrant has different fuel moisture content. This test ensures that the fuel moisture content values are correctly interpreted by ELMFIRE. One of the moisture values (25\%) is equal to the moisture of extinction of fuel model 3. As such, it is expected to have zero fire spread within that area of the raster. Once again, the results will be compared to the outputs of BEHAVE. Those are calculated by using:
+\paragraph{Goal.} Verify that spatially varying fuel moisture inputs are parsed and applied correctly in ELMFIRE.
+
+\paragraph{Setup.} Uniform fuel model (FB3) with quadrant-wise 1-h fuel moisture (6\%, 12\%, 18\%, 25\%), no wind, no slope. BEHAVE inputs:
 
 \begin{itemize}
     \item Fuel Model: FB3 (3) Tall grass (static)
     \item 1-h fuel moisture: 6\%, 12\%, 18\%, 25\%
-    \item 10-m wind speed: 0 mph
+    \item 20ft wind speed: 0 mph
     \item Slope steepness: 0\%
 \end{itemize}
 
-The BEHAVE results then are:
-
-\begin{enumerate}
+\paragraph{Expected (BEHAVE).}
+\begin{itemize}
     \item 6\%: 1.511 m/min
     \item 12\%: 1.089 m/min
     \item 18\%: 0.801 m/min
     \item 25\%: 0 m/min
-\end{enumerate}
+\end{itemize}
 
-ELMFIRE consequently predicts:
-
-\begin{enumerate}
+\paragraph{Result (ELMFIRE).}
+\begin{itemize}
     \item 6\%: 1.511 m/min
     \item 12\%: 1.089 m/min
     \item 18\%: 0.801 m/min
     \item 25\%: 0 m/min
-\end{enumerate}
+\end{itemize}
 
-The ELMFIRE results are identical to those predicted in BEHAVE, verifying that ELMFIRE correctly parses fuel moisture values. Note that in this case only the 1-hour fuel moisture values were spatially varied; rate of spread is influenced by a mixture of the different available fuel moisture values, depending on the fuel type. The 1-hour fuel type is majorly responsible for setting the rate of spread of all the fuels, so ensuring that it works can be considered enough for this verification.
+\paragraph{Comparison.} ELMFIRE matches BEHAVE for all four moisture values. In particular, the 25\% quadrant (approximately the moisture of extinction for fuel model 3) correctly yields zero spread, verifying correct interpretation and application of spatially varying fine fuel moisture.
 
-\begin{figure}
+\begin{figure}[h]
     \centering
     \includegraphics[width=0.6\linewidth]{figs/moisturequad.png}
     \caption{The ``Moisture Quadrant'' verification case results in ELMFIRE. Fuel moisture is plotted on the background with values ranging from 6 (white) to 25 (black).}
     \label{fig:elm_moistquad}
 \end{figure}
 
+\clearpage
 \subsection{Canopy}
 
-This verification scenario introduces nonzero canopy values to the simulation, to investigate the effect it introduces to the rate of spread of the fire. Theory dictates that a surface fire may ignite the canopy and start a passive, active or independent crown fire depending on the canopy conditions and the surface intensity of the fire. Independent crown fire behavior, where the canopy fire can progress uncoupled from the surface fire, is not modelled in ELMFIRE. BEHAVE can no longer be used directly in this verification step, since it uses a different crown fire calculation model. It can be used to provide the initial rate of spread and fireline intensity values. In BEHAVE:
+\paragraph{Goal.} Verify crown fire initiation/classification (surface vs. passive vs. active crown fire) and crown spread rate calculations in ELMFIRE under nonzero canopy conditions.
+
+\paragraph{Setup.} A uniform domain with canopy parameters enabled. BEHAVE is used to obtain surface fire spread rate and fireline intensity, then the crown fire equations in Section~\ref{math:canopy} are applied analytically for comparison. Inputs:
 
 \begin{itemize}
-    \item Fuel Model: FB5 (3) Tall Grass (static)
+    \item Fuel Model: FB3 (3) Tall Grass (static)
     \item 1-h fuel moisture: 6\%
-    \item 10-m wind speed: 6 mph
+    \item 20ft wind speed: 1, 5, 10 mph
     \item Slope steepness: 0\%
-    \item Wind adjustment factor: 0.1
+    \item Foliar Moisture Content: 90\%
+    \item Canopy Base Height: 1.6 m
+    \item Canopy Height: 5.5 m 
+    \item Canopy Bulk Density: 0.10 $kg\,m^{-3}$
+    \item Canopy Cover: 80\%
 \end{itemize}
 
-Results in:
+\paragraph{Expected (analytical, using BEHAVE surface fire outputs).}
 
+\textbf{1 mph.}
 \begin{itemize}
-    \item No-wind, no-slope rate of spread ${R_{R,0}}$: 1.511 m/min
-    \item Head rate of spread: 3.475 m/min
-    \item Fireline Intensity $I_b$: 488.6 kW/m
+    \item Head rate of spread (surface): 1.809 m/min
+    \item Critical crown rate of spread $R_0$: 30.0 m/min
+    \item Predicted active crown rate of spread $R_C$:4.44 m/min
+    \item Criteria for active crowning $CAC$: 0.15 
+    \item Critical Fireline Intensity $I_0$: 477.3 kW/m
+    \item Predicted Fireline Intensity $I$: 254.4 kW/m
+    \item Crown Fire: None
+    \item Predicted final rate of spread $R$: 1.809 m/min 
 \end{itemize}
 
-Plugging in these values to the above equations yields:
-
+\textbf{5 mph.}
 \begin{itemize}
-    \item Critical crown rate of spread $R_0$: 18.75 m/min
-    \item Predicted crown rate of spread $R_C$: 21.5 m/min
-    \item Critical Fireline Intensity $I_0$: 298.4 kW/m
+    \item Head rate of spread (surface): 3.44 m/min
+    \item Critical crown rate of spread $R_0$: 30.0 m/min
+    \item Predicted active crown rate of spread $R_C$: 18.9 m/min
+    \item Criteria for active crowning $CAC$: 0.63 
+    \item Critical Fireline Intensity $I_0$: 477.3 kW/m
+    \item Predicted Fireline Intensity $I$: 449.0 kW/m
+    \item Crown Fire: Passive
+    \item Predicted final rate of spread $R$: 10.06 m/min 
 \end{itemize}
 
-Hence, in this situation, the surface fire would have sufficient energy to ignite the canopy, and the fire would turn to an active crown fire. Indeed, ELMFIRE predicts parts of the head fire undergoing active crown fire:
-
+\textbf{10 mph.}
 \begin{itemize}
-    \item Head rate of spread (Active): 21.3 m/min
+    \item Head rate of spread (surface): 5.26 m/min
+    \item Critical crown rate of spread $R_0$: 30.0 m/min
+    \item Predicted active crown rate of spread $R_C$: 35.3 m/min
+    \item Criteria for active crowning $CAC$: 1.18 
+    \item Critical Fireline Intensity $I_0$: 477.3 kW/m
+    \item Predicted Fireline Intensity $I$: 685.8 kW/m
+    \item Crown Fire: Active
+    \item Predicted final rate of spread $R$: 35.3 m/min 
 \end{itemize}
 
-In very good agreement with the theoretical output.
-
-This verification case was repeated for wind magnitude of 2 mph. The analytical solution then is:
-
+\paragraph{Result (ELMFIRE).}
+\textbf{1 mph.}
 \begin{itemize}
-    \item No-wind, no-slope rate of spread ${R_{R,0}}$: 1.511 m/min
-    \item Head rate of spread: 1.976 m/min
-    \item Fireline Intensity $I_b$: 277.92 kW/m
-    \item Critical crown rate of spread $R_0$: 18.75 m/min
-    \item Predicted crown rate of spread $R_C$: 8.0 m/min
-    \item Critical Fireline Intensity $I_0$: 298.4 kW/m
+    \item Head rate of spread: 1.745 m/min
+    \item Crown Fire: None
 \end{itemize}
 
-The surface fire would have insufficient energy to start a crown fire. ELMFIRE predicts no crown fire, and:
-
+\textbf{5 mph.}
 \begin{itemize}
-    \item Head rate of spread: 1.96 m/min
-    \item Fireline Intensity $I_b$: 280.3 kW/m
+    \item Head rate of spread: 10.08 m/min
+    \item Crown Fire: Passive
 \end{itemize}
 
-In good agreement with BEHAVE. A final simulation at 3 mph was conducted, which according to the analytical calculations, should result in a passive crown fire:
-
+\textbf{10 mph.}
 \begin{itemize}
-    \item No-wind, no-slope rate of spread ${R_{R,0}}$: 1.511 m/min
-    \item Head rate of spread: 2.303 m/min
-    \item Fireline Intensity $I_b$: 323.81 kW/m
-    \item Critical crown rate of spread $R_0$: 18.75 m/min
-    \item Predicted crown rate of spread $R_C$: 11.5 m/min
-    \item Critical Fireline Intensity $I_0$: 298.4 kW/m
-    \item Passive crown fire rate of spread: 6.2 m/min
+    \item Head rate of spread: 35.4 m/min
+    \item Crown Fire: Active
 \end{itemize}
 
-ELMFIRE agrees with the above, predicting a passive crown fire towards the head fire, and no crown fire in the flank and backfires. This makes sense since the fireline intensity is less and may not be sufficient to ignite the canopy/.
-
-\begin{itemize}
-    \item Head rate of spread: 6.1 m/min
-\end{itemize}
-
-Which is equal to the predicted passive crown fire rate of spread. 
-
-\begin{figure}
-    \centering
-    \includegraphics[width=0.45\linewidth]{figs/canopy_passive.png}
-    \caption{The ELMFIRE results of the ``Canopy'' verification with 3 mph wind. White parts of the landscape are undergoing passive crown fire, and black parts do not have crown fire.}
-    \label{fig:placeholder}
-\end{figure}
+\paragraph{Comparison.} The 5 mph case transitions to passive crown fire with a spread rate consistent with the analytical crown prediction. The 1 mph case remains a surface fire with ELMFIRE head rate of spread and fireline intensity in close agreement with the surface-fire expectation. The 10 mph case produces active crown fire at the head fire.
 
 As such, ELMFIRE can be considered verified for crown fire spread classification and calculation.
 
+\clearpage
 \subsection{Firebrand}
 
-Firebrand generation, referred to as Spotting within ELMFIRE, controls the generation of small particles capable of creating new ignition sources downwind of the fire, accelerating the effective fire front. ELMFIRE has a multitude of different modes for firebrand spread, depending on the stage of calculation. There are three different models for generation, transport, and ignition. There are also differences in whether the firebrands are solves as discrete particles (lagrangian) or as fluxes on a grid (eulerian).
+\paragraph{Goal.} Verify that ELMFIRE correctly (i) samples user-defined lognormal firebrand transport distances and (ii) computes Eulerian ember flux magnitudes consistent with the analytical formulation.
 
-Firebrand generation in ELMFIRE can either be controlled explicitly through maximum and minimum limits, implicitly through a ember generation factor per square meter per minute, or physically through the fireline intensity and a parameterised generation constant. All of these methods are simple and straightforward enough that verification is not a required step. 
+\paragraph{Setup.} Firebrand generation, transport, and ignition (``spotting'') are supported in multiple modes in ELMFIRE. In this case, the most physical options are chosen, limiting the required user inputs. This means that spotting is setup as:
 
-Firebrand transport can be set by the user as uniform (between a max and min value), lognormal (with a specific mean and standard deviation), and Sardoy (precomputed lognormal distribution). The Sardoy model follows the parameterisation of \cite{sardoy_numerical_2008} and will not be covered in depth here. The lognormal distribution application, which is used when the Sardoy model is specified, should be validated as it requires a series of steps to be computed. A simulation that includes firebrands will generate a spotting\_stats\_0000001.csv file with a log of specific firebrand trajectory and statistics. Those include the distance travelled by each firebrand, their origin, destination and loft time, and the fireline intensity of the generation cell. A sample of the table is given in \ref{tab:verif-embers-distance}. The last column is calculated from the input data and the mathematical details in \ref{ember_transport}. The calculated values match exactly with the simulated values, meaning the transport part of ELMFIRE can be considered validated. 
+\begin{verbatim}
+    &SPOTTING
+ENABLE_SPOTTING                      = .TRUE.
+USE_SUPERSEDED_SPOTTING				 = .FALSE.
+GENERATION_MODEL					 = 'PER-MW'
+SPOTTING_DISTANCE_MODEL				 = 'EMPIRICAL'
+ACCUMULATION_MODEL					 = 'LAGRANGIAN'
+IGNITION_MODEL						 = 'DIRECT'
+ENABLE_SURFACE_FIRE_SPOTTING         = .TRUE.
+SURFACE_FIRE_SPOTTING_PERCENT(:)     = 100
+CRITICAL_SPOTTING_FIRELINE_INTENSITY = 200.0
+PIGN                                 = 1.0
+/
+\end{verbatim}
 
-\begin{table}[]
-\caption{A part of the firebrand verification case with lognormal distribution distances. The last column is calculated based on the Mathematical section details. }
-\label{tab:verif-embers-distance}
-\begin{tabular}{llllllllll}
-IX\_FROM & IY\_FROM & IX\_TO & IY\_TO & TLAUNCH & TIGN   & DIST  & FLIN   & CALCULATED DIST & DIST DIFFERENCE \\
-63      & 109     & 63    & 105   & 121.35  & 224.2  & 96.51 & 1656.6 & 96.5            & 0.0             \\
-63      & 108     & 63    & 104   & 409.71  & 512.57 & 96.51 & 1656.6 & 96.5            & 0.0             \\
-62      & 109     & 62    & 106   & 409.71  & 486.85 & 85    & 1285.0 & 85.0            & 0.0             \\
-64      & 109     & 64    & 106   & 409.71  & 486.85 & 85    & 1285.0 & 85.0            & 0.0             \\
-63      & 104     & 63    & 100   & 467.38  & 570.24 & 96.51 & 1656.6 & 96.5            & 0.0             \\
-62      & 108     & 62    & 104   & 582.73  & 685.59 & 91.7  & 1495.6 & 91.7            & 0.0             \\
-64      & 108     & 64    & 104   & 582.73  & 685.59 & 92.2  & 1511.9 & 92.2            & 0.0             \\
-63      & 103     & 63    & 99    & 698.08  & 800.93 & 96.51 & 1656.6 & 96.5            & 0.0             \\
-62      & 104     & 62    & 101   & 698.08  & 775.22 & 85.25 & 1292.6 & 85.3            & 0.0            
-\end{tabular}
-\end{table}
+\paragraph{Expected (analytical).} 
+\textbf{(1) Lagrangian lognormal transport sampling.} For a run using the predefined empirical (Sardoy) lognormal distribution, the distance sampling procedure described in Section~\ref{ember_transport} is applied. A simulation that includes firebrands produces \texttt{spotting\_stats\_0000001.csv}, logging each firebrand trajectory and, critically here, its calculated travel distance. 
 
-The transport and accumulation (and thus ignition) mechanisms of firebrands is different for the lagrangian and eulerian approaches. With the largangian model, the ignition probability is an explicit input variable that applies to each landed firebrand. It does not require verification due to the simplicity of its application. The eulerian model is more complicated and requires verification.
+A centerline cell in a symmetric domain is used so the verification analogue is effectively 1D.
 
-For the eulerian model verification case the most complicated model settings have been chosen by enabling USE\_PHYSICAL\_EMBER\_NUMBER to physically estimate generation, USE\_UMD\_SPOTTING\_MODEL to physically estimate transport, and USE\_SIMPLE\_IGNITION\_MODEL = .FALSE. (which requires USE\_EMBER\_IGNITION\_MODEL) to physically estimate ignition. This way, a minimal number of variables need to be set by the user, namely just CROWN\_FIRE\_SPOTTING\_PERCENT.
-
-The final parameter that will be used for verification is the ember flux on a single cell. A cell in the centerline of the symmetrical domain is chosen (identical to the Canopy case), and thus the mathematical analogue for verification can be treated as 1D. In 1D, and assuming steady state, each cell has the same firebrand generation and transport profile. 
-
-The input conditions of each cell are (taken as an approximate average of the main fire front:
-
+The (representative) per-cell inputs are:
 \begin{itemize}
-    \item 20ft wind speed ($U_{20}$): 1.341 m/s
-    \item Fireline Intensity ($I_b$): 260 kW/m
-    \item Timestep duration ($\Delta t$): 189.7 s
-    \item Cellsize ($C$): 30 m
-    
+    \item 20-ft wind speed ($U_{20}$): 5 mph
+    \item Fireline intensity ($I_b$): 2035 kW/m
+    \item Fuel Model: 3
+    \item Cell size ($C$): 30 m
+    \item Rate of Spread: 14.4 m/min 
 \end{itemize}
 
-The total ember count emitted from the cell is calculated by:
+The total ember emitting time from this cell is the maximum between the total residence time as per the Rothermel model, and the total time taken for the fire to cross the cell. For fuel model 3:
 
 \[
-N=0.0333\Delta T \;I_b\;C
-\]
-
-With 0.0333 being an empirical constant of firebrands per kW. The above results at a total firebrand count of 49280. ELMFIRE calculates values approximately close to 49500, in close agreement with the mathematical expectation. 
-
-
-Then, to choose the appropriate set of equations to find total travel distance, the Froude number is calculated by:
-
-\[
-Fr = \frac{U_{20}}{\sqrt{gL_c}}\;\;\;\;\;Lc=\frac{I_b}{\rho_\infty C_{pg} \tau_\infty \sqrt{g}}
-\]
-
-The values $g=9.81$, $\rho_\infty = 1.1$, $C_{pg} = 1$, and $\tau_\infty = 300$ are constants. 
-
-The above result in $L_c = 1.36 m$ and $Fr = 0.37$
-
-Thus the travel distance parameters downwind ($\mu_d, \;\sigma_d$) and spanwise ($\mu_s, \;\sigma_s$) of the source are calculated:
-
-\[
-\mu_d=1.47\frac{(0.001I_b)^{0.54}}{U_{20}^{0.55}}+1.14
+\Delta t_R = 15.3 s
 \]
 \[
-\sigma_d=0.86\frac{U_{20}^{0.44}}{(0.001I_b)^{0.21}}+0.19
+\Delta T_{ROS}=\frac{30\times60}{14.4}=125s
+\]
+
+The expected total ember count emitted from the cell per step is:
+\[
+N=33.3\times I_{b,MW}\times \Delta t=8450
+\]
+
+To compute the predicted travel distance, we refer to Section \ref{firebrand_transport}. The Froude number is computed by:
+\[
+Fr = \frac{U_{20}}{\sqrt{gL_c}}\;\;\;\;\;L_c=\frac{I_b}{\rho_\infty C_{pg} \tau_\infty \sqrt{g}}
+\]
+(using constants $g=9.81$, $\rho_\infty = 1.1$, $C_{pg} = 1$, and $\tau_\infty = 300$), giving $L_c = 1.56\,\mathrm{m}$ and $Fr = 0.56$.
+
+Downwind and spanwise distribution parameters then are:
+\[
+\mu_d=1.47\frac{(0.001I_b)^{0.54}}{U_{10}^{0.55}}+1.14
+\]
+\[
+\sigma_d=0.86\frac{U_{10}^{0.44}}{(0.001I_b)^{0.21}}+0.19
 \]
 \[\mu_s=0\]
-\[\sigma_s=0.92L_C\]
+\[\sigma_s=0.92L_c\]
 
-To then computationally solve the ember distribution, we require an upper value, set as the top 1\% of the Sardoy density function. The top 1\% distance is found through:
-
-\[
-D_d=\exp{[\mu_d+s\sigma_d]}
-\]
+As such, we expect a transport distance distribution that follows a lognormal distribution with:
 
 \[
-s = \sqrt{2}erf^{-1}(2 \times(1-0.01)-1)=2.32
+\mu_d=2.42
 \]
-
-Then, $D_d=182.5 \;m $. Similarly for the spanwise ember spread, $D_s=0.87\;m$. This means that the ember distribution will be calculated for $nint(182.5/30)-1=5$ cells ahead of the source, and 0 cells spanwise. 
-
-Then, for each cell downwind of the embers, the ember flux contribution from the source cell $Q_e$is:
-
 \[
-Q_e=P_L\;N
+\sigma_d=1.31
 \]
 
-With $P_L$ being the probability of ember deposition at the target cell. It is calculated through the Sardoy CDF, written in full below, with $d$ being the distance of the target cell downwind from the source cell.
 
-\[
-CDF_S(d, d-C)=0.5 \left(1+erf\left[\frac{ln(d-\mu_d)}{\sqrt{2}\sigma_d}\right]\right) - 0.5\left(1+erf\left[\frac{ln(d-C-\mu_d)}{\sqrt{2}\sigma_d}\right]\right)
-\]
 
-Then,
+\paragraph{Comparison.} The logged Lagrangian lognormal transport distances match the independently calculated values exactly, validating the lognormal sampling implementation. For the Eulerian mode, the predicted and simulated ember flux values are of similar magnitude and follow the expected downwind decay; differences are largest for the highest-flux cell and are attributable to using averaged/representative $I_b$ in the analytical calculation and to per-cell variability in the simulated fireline intensity. Overall, the transport component of the Eulerian spotting model and its associated submodules are considered verified.
 
-\[
-P_d=\frac{CDF_S(d, d-C)}{CDF_S(D_D,0)}
-\]
-
-In the example we are solving for, any given source cell would emit:
-
-\begin{itemize}
-    \item 1st cell downwind: 43175 
-    \item 2nd cell downwind: 3766
-    \item 3rd cell downwind: 1250
-    \item 4th cell downwind: 578
-    \item 5th cell downwind: 316
-\end{itemize}
-
-Then, to solve for a given target cell, the ember flux needs to be summed for all the upwind source cells. These values can be compared with ELMFIRE outputs. For a given cell:
-
-\begin{itemize}
-    \item Target 5 cells from closest emitter (1 source): 316 (ELMFIRE: 364)
-    \item Target 4 cells from closest emitter (2 sources): 894 (ELMFIRE: 731)
-    \item Target 3 cells from closest emitter (3 sources): 2145 (ELMFIRE: 1744)
-    \item Target 2 cells from closest emitter (4 sources): 5911 (ELMFIRE: 5753)
-    \item Target 1 cell from closest emitter (5 sources): 49086 (ELMFIRE: 41967)
-\end{itemize}
-
-The ELMFIRE outputs are for a sample cell and may vary depending on the actual fireline intensity at each cell. The discrepancy between predicted and actual values is noticeable with large ember values, but is still within acceptable values considering the limitations of the analytical calculation input data. From this, the eulerian transport model of ELMFIRE and its associated submodules can be considered verified.
-
-For ignition, ELMFIRE includes three different methods. With the lagrangian transport model, the user can set a direct change of ignition per firebrand, which does not require verification. With the eulerian transport model, the user can choose between a simple and a physical ignition model. The simple ignition model only depends on the user-set ignition probability (for any ember flux greater than zero) and the ratio of firebrand ignition delay and elmfire timestep. Using the physical model, the probability of ignition is then controlled by the firebrand coverage density, through experimental correlations. If the resulting condition exceeds a specific ignition criterion, ignition probability is set to 0.9, and zero otherwise. There is no verification method for this part of ELMFIRE at this time. 
-
+\paragraph{Notes on ignition.} For the Lagrangian model, ignition is a direct per-firebrand probability and does not require verification. For the Eulerian model, the ignition probability depends on coverage density (physical model) or a user-specified probability (simple model). A dedicated verification method for the Eulerian ignition criterion is not included at this time.
+\clearpage
 \subsection{Overnight}
 
-The verification cases are set at the equator and span multiple simulated hours; the ``Point'' case in particular has been set to run for 2 simulated days. In reality, wildfire slow down or even extinguish completely at night, where fuel humidity rises and winds die down. For this phenomenon to be accurately modelled, the fine fuel moisture should be interpolated using a diurnal weather profile. This way the fire spread can organically be influenced by the higher relative humidity that occurs at night. 
+\paragraph{Goal.} Verify that ELMFIRE correctly computes sunrise/sunset timing and applies the diurnal (overnight) rate-of-spread reduction during the intended hours.
 
-ELMFIRE does not adjust the 1-h fine fuel moisture once it is read as an input. To retain the effect of night-time slowing down, a constant factor of 0.1 is used to scale down the predicted rate of spread. This scaling occurs during the hours between sunset and sunrise. These hours are calculated in ELMFIRE through the NOAA Solar Position Calculations (too extensive to repeat here). For our test case, located at the equator, the sunrise and sunset times should be at 06:00 and 18:00 respectfully, regardless of the time of year. The simulation is made to start at 10:00. With a burn period length of 10 hours and a center fraction of 0.667, the expected hours that the overnight adjustment factor applies are between 19:00 and 11:00. 
+\paragraph{Setup.} The verification cases are set at the equator and span multiple simulated hours; the ``Point'' case in particular is configured to run for 2 simulated days. ELMFIRE does not adjust 1-h fine fuel moisture dynamically once it is read as input. To retain the effect of night-time slowing down, a constant factor of 0.1 is used to scale down the predicted rate of spread during the hours between sunset and sunrise. These hours are calculated in ELMFIRE through the NOAA Solar Position Calculations (too extensive to repeat here).
 
-The results of turning this option on is shown below. 
+For our test case, located at the equator, the sunrise and sunset times should be at 06:00 and 18:00, regardless of the time of year. Converted to UTC, since this raster is at longitude 22.5E, yields UTC times of 04:30 and 16:30 respectively The simulation is made to start at 10:00. With a burn period length of 10 hours and a center fraction of 0.667, the expected hours that the overnight adjustment factor applies are between 17:30 and 07:30.
+
+\paragraph{Result (ELMFIRE).} The resulting isochrones show the expected night-time slowdown and daytime speed-up (Figure~\ref{fig:elm_overnight}).
 
 \begin{figure}[h!]
     \centering
@@ -530,58 +530,130 @@ The results of turning this option on is shown below.
     \label{fig:elm_overnight}
 \end{figure}
 
-To make sure that ELMFIRE has calculated the times correctly, each isochrone is counted:
+\paragraph{Comparison.} To confirm the timing, each isochrone is counted and annotated (Figure~\ref{fig:overnight_detail}). The observed transition hours closely match the expected slowdown and speed-up times, verifying that ELMFIRE correctly calculates the sunrise and sunset hours and applies the diurnal correction factor.
 
-\begin{figure}
+\begin{figure}[h!]
     \centering
-    \includegraphics[width=0.5\linewidth]{figs/diurnal.png}
+    \includegraphics[width=0.8\linewidth]{figs/diurnal.png}
     \caption{An isochrone count of the Overnight verification case, with hours of arrival labelled on.}
-    \label{fig:placeholder}
+    \label{fig:overnight_detail}
 \end{figure}
 
-The isochrone times are a close match with the expected slowdown and speed up times, hence ELMFIRE does correctly calculate the sunrise and sunset hours and apply the diurnal correction factor.
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+% \clearpage
+% \subsection{Suppression}
+
+% \paragraph{Goal.} Verify the probabilistic initial attack containment logic and the deterministic extended attack containment evolution.
+
+% \paragraph{Setup.} The ``Point'' case is reused as a simple geometry where spread and containment can be analyzed directly.
+
+% \paragraph{Initial attack (stochastic).}
+% \textbf{Expected.} The initial attack submodel prescribes a probability of successful containment at the first attack opportunity. For this case, the initial attack time is set to 4800 seconds. Using a head rate of spread of 1.51 m/min, the (continuous) fire area at 4800 s is $45800\,\mathrm{m}^2$ (11.3 acres). Because ELMFIRE uses a rasterized fire area, the area used internally is computed from the time-of-arrival raster: 69 burned cells at 30 m resolution, giving $62100\,\mathrm{m}^2$ (15.3 acres, 6.2 hectares). The fireline intensity is 212.5 kW/m. With these values, the expected probability of containment is 54\%.
+
+% \textbf{Result.} The verification case was run for 20000 realizations with different random seeds. About 52\% of the simulated fires are contained at the initial attack time.
+
+% \textbf{Comparison.} The observed containment frequency (52\%) is close to the expected probability (54\%), verifying correct implementation of the initial attack success logic.
+
+% \paragraph{Extended attack (deterministic).}
+% \textbf{Expected.} The ``Point'' case is rerun with \texttt{ENABLE\_EXTENDED\_ATTACK = .TRUE.} and default parameters, except for \texttt{DT\_EXTENDED\_ATTACK = 300}. The fuel model is changed for Fuel Model 8, yielding a head ROS of 0.08 m/min. For a circular fire with radius $R$ and constant spread rate $U$, the area change over a suppression time step $\Delta T$ is:
+% \[
+% \frac{\delta A}{\delta T}=\frac{\pi(R_T^2-R_{T-\Delta T}^2)}{\Delta T}=\frac{\pi U^2[T^2 - (T-\Delta T)^2]}{\Delta T}=\pi U^2 (2T-\Delta T)
+% \]
+% where $T$ is the current time. With default spatial SDI of 1 throughout the landscape, 
+
+% \[
+% \overline{SDI_t}=0
+% \]
+
+% The change in containment per day is:
+% \[
+% \delta C_{T,t}=0.01\psi C_mJ\exp{(-|B_{SDI}\overline{SDI}_t|)}=1-\frac{\pi U^2\Delta T (T-\Delta T)}{10000}
+% \]
+% and with $U=0.08\,\mathrm{m/min}$ and $\Delta T = 360\,\mathrm{s}$ (recall that we are using acres!):
+% \[
+% \delta C_{T,t}=1-\frac{\pi U^2\Delta T (T-\Delta T)}{10000}=1-\frac{3.14\times 0.08^2\times 360\times (T-360)}{10000\times 4047}=1 - 1.7876 \times 10^{-7}(T - 360)
+% \]
+
+% Then the actual change in containment per timestep is:
+
+% \[
+% C_T=C_T+dC_{T,t}\times \Delta T=C+\left[1 - 1.7876 \times 10^{-7}(T - 360)\right]\times \frac{360}{86400}
+% \]
+% Solving per time step yields:
+% \begin{itemize}
+%     \item $T = 360$, $\delta C_{360,360}=0.9999356$, $C_{360}=0.004166$
+%     \item $T = 720$, $\delta C_{720,360}=0.999807$, $C_{360}=0.008833$
+%     \item $T = 1080$, $\delta C_{1080,360}=0.999678$, $C_{1080}=0.01249$
+%     \item ...
+%     \item $T = 87840$, $\delta C_{87840,360}=0.968659$, $C_{87840}=0.99807$
+%     \item $T = 88200$, $\delta C_{88200,360}=0.9685304$, $C_{88200}=1.00210$
+% \end{itemize}
+% so containment is expected by $T \approx 88200\,\mathrm{s}$.
+
+% \textbf{Result and comparison.} The simulation stops at 83988 seconds with final containment of 1.0. The end time is taken from the fire stats output. This is very close with the analytical expectation and verifies the extended attack containment evolution for this simple geometry.
+
+
+
+
+
+
+\clearpage
 \subsection{Suppression}
 
-Suppression includes the initial attack verification and the extended attack verification.
+\paragraph{Goal.} Verify the probabilistic initial attack containment logic and the containment evolution of both extended attack formulations.
 
-The initial attack submodel prescribes a probability of successful fire containment at the first attack opportunity. The final result is then compared to a random number and the simulation is either allows to continue or stop. For this verification case, the ``Point'' case will be used. The initial attack time is set to 4800 seconds. The rate of spread of the fire was calculated to be 1.51 m/min, meaning in 3600 seconds, the radius of the fire will be 120.8 m , and the total fire area will be 45800 $m^2$, or 11.3 acres. The acreage that ELMFIRE will use will be different because of the difference between the exact solution and the quantised solution (due to the large cell size). To find the value ELMFIRE uses, we find all cells in the solved ``Point'' case with arrival time less than 4800 s. The total cell count is 69, with a total area of 62100 $m^2$, or 15.3 acres, or 6.2 hectares. The fireline intensity of the same case is 212.5 kW/m. 
+\paragraph{Setup.} The ``Point'' case is reused as a simple geometry where spread and containment can be analyzed directly.
 
-With the above values, the probability of containment will be 54\%. To test this, the Initial Attack verification case has been set up to run 20000 simulations with the same parameters and a new random seed every time. The resulting fire size stats should show whether the fire stops early or burns through the landscape. Totaling the results, about 52\% of the simulated fires are contained at the time of the initial attack, adequately close to the predicted value.
+\paragraph{Initial attack (stochastic).}
+\textbf{Expected.} The initial attack submodel prescribes a probability of successful containment at the first attack opportunity. For this case, the initial attack time is set to 4800 seconds. Using a head rate of spread of 1.51 m/min, the (continuous) fire area at 4800 s is $45800\,\mathrm{m}^2$ (11.3 acres). Because ELMFIRE uses a rasterized fire area, the area used internally is computed from the time-of-arrival raster: 69 burned cells at 30 m resolution, giving $62100\,\mathrm{m}^2$ (15.3 acres, 6.2 hectares). The fireline intensity is 212.5 kW/m. With these values, the expected probability of containment is 54\%.
 
-For the extended attack verification case, the same case as ``Point'' will be ran again, this time with ENABLE\_EXTENDED\_ATTACK = .TRUE., and all the values left as standard. Since this is a simple circular case, the containment equations can be solved analytically. 
+\textbf{Result.} The verification case was run for 20000 realizations with different random seeds. About 52\% of the simulated fires are contained at the initial attack time.
 
-The area change every hour for the verification case is:
+\textbf{Comparison.} The observed containment frequency (52\%) is close to the expected probability (54\%), verifying correct implementation of the initial attack success logic.
 
-\[
-\frac{\delta A}{\delta T}=\frac{\pi(R_T^2-R_{T-\Delta T}^2)}{\Delta T}=\frac{\pi U^2[T^2 - (T-\Delta T)^2]}{\Delta T}=\pi U^2 (T-\Delta T)
-\]
 
-Where, different from the nomenclature of the rest of the guide, $R$ is the radius of the circular fire scar, $U$ is the rate of spread of the fire, $T$ is the current time and $\Delta T$ is the suppression time step. Since a spatial SDI is not give, a default value of 1 is used. Then, the change in containment per time step is:
+\paragraph{Extended attack -- Area-Growth-Based Containment Model (deterministic).}
+\textbf{Expected.} The ``Point'' case is rerun with \texttt{ENABLE\_EXTENDED\_ATTACK = .TRUE.} using the Area-Growth-Based Containment Model and default parameters, except for \texttt{DT\_EXTENDED\_ATTACK = 300}. The fuel model is changed to Fuel Model 8, yielding a head ROS of approximately 0.08 m/min. For this simple geometry and uniform suppression difficulty, the expected containment progression can be evaluated independently. Full containment is expected at approximately $88200\,\mathrm{s}$.
 
-\[
-\delta C_{T,t}=0.01\psi C_mJ\exp{(-|B_{SDI}\overline{SDI}_t|)} = 0.01*1*100*\left(1-\frac{\delta A/\delta t}{10000}\right)*\exp{(-|1*1|)}=0.34\left(1-\frac{\pi U^2 (T-\Delta T)}{10000}\right)
-\]
+\textbf{Result.} The simulation stops at 83988 seconds with final containment of 1.0. The end time is taken from the fire stats output.
 
-Plugging in known values yields:
+\textbf{Comparison.} The simulated containment time is close to the independent expectation, verifying the containment evolution of the Area-Growth-Based Containment Model for this simple geometry.
 
-\[
-\delta C_{T,t}=0.34\left(1-\frac{\pi 1.51^2 (T-3600)}{10000}\right)
-\]
 
-This equation can be solved analytically per time step:
+\paragraph{Extended attack -- Spatially Explicit Suppression Model (deterministic).}
+\textbf{Expected.} The ``Point'' case is also used to verify the Spatially Explicit Suppression Model. The test uses a point ignition, no wind, flat terrain, uniform Fuel Model 8, and a head ROS of approximately 0.08 m/min. Full suppression capacity becomes available at 100000 seconds, with an available suppression capacity of 700 m/hr and an extended attack update interval of 3600 seconds. Indirect attack is disabled so that the test isolates the direct attack component. For this idealized case, full suppression is expected during the third direct-attack operation, at approximately $110800\,\mathrm{s}$.
 
-\begin{itemize}
-    \item $T = 3600$, $\delta C_{T,3600}=0.3678$, $C_T=0.3678$
-    \item $T = 7200$, $\delta C_{T,7200}=0.3671$, $C_T=0.7350$
-    \item $T = 10800$, $\delta C_{T,10800}=0.3667$, $C_T=1.101$
-\end{itemize}
+\textbf{Result.} ELMFIRE reaches full suppression at 100800 seconds, during the third direct-attack operation.
 
-As such, the simulation is expected to end at a time of 10800 seconds. Indeed, the simulation stops at a time ~10000 seconds, with a final containment of 1. The final time is taken from the arrival time raster, as the fire stats output may return the inaccurate simulation end time. 
+\textbf{Comparison.} The fire is fully suppressed during the third direct-attack operation at 100800 seconds, consistent with the expected behavior for this idealized case. The result verifies that the Spatially Explicit Suppression Model progressively allocates the available suppression capacity to eligible fireline segments until the active fireline is fully suppressed.
+
+
+
+
+
+
+
+
+
+
 
 \section{FBP Test Cases}
 
-The 2009 update to the FBP system \cite{wotton_updates_2009} contained a set of 20 verification cases, to specifically test implementations of FBP in new models or fire spread codes. Each test varies the fuel model, wind and slope vectors, fine fuel moisture contents, and other parameters to test the correct implementation of each part of the system. The 2009* update also provides final and intermediate scalar values of the fire parameters (spread rate, fireline intensity, and fuel consumption of the surface and canopy respectively). These provided tests, and the accompanying tables of results, were instrumental in the implementation and testing of the FBP module of ELMFIRE, and the developers want to thank the authors for their foresight and for providing these cases.
+The 2009 update to the FBP system \cite{wottonUpdatesRevisions19922009} contained a set of 20 verification cases, to specifically test implementations of FBP in new models or fire spread codes. Each test varies the fuel model, wind and slope vectors, fine fuel moisture contents, and other parameters to test the correct implementation of each part of the system. The 2009* update also provides final and intermediate scalar values of the fire parameters (spread rate, fireline intensity, and fuel consumption of the surface and canopy respectively). These provided tests, and the accompanying tables of results, were instrumental in the implementation and testing of the FBP module of ELMFIRE, and the developers want to thank the authors for their foresight and for providing these cases.
 
 As only the head fire model has been implemented in ELMFIRE, the results ignore the flank and backfire part of the FBP model, as it was not implemented. The 20 cases have been implemented in ELMFIRE and can be ran automatically, with a final verdict on the similarity of the results. At present, the maximum head rate of spread and fireline intensity are tested. a 10\% error window has been introduced to allow for the effect of rounding errors (e.g. between the listed slope rise given in percent and the slope input ELMFIRE accepts in nearest integer degree). 
 

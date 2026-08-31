@@ -1,0 +1,72 @@
+\begin{table}[h!]
+\centering
+\small
+\renewcommand{\arraystretch}{1.2}
+
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{|l|l|l|}
+\hline
+
+\rowcolor{gray!40}
+\multicolumn{3}{|c|}{\textbf{GENERATION\_MODEL}} \\ \hline
+
+\rowcolor{gray!20}
+\textbf{RANDOM*} & \textbf{PER-AREA} & \textbf{PER-MW} \\ \hline
+
+NUMBERS\_MIN & EMBER\_GR & EMBER\_GR\_PER\_MW\_BLDG \\ \hline
+NUMBERS\_MAX &  & EMBER\_GR\_PER\_MW\_VEGE \\ \hline
+
+\rowcolor{gray!40}
+\multicolumn{3}{|l|}{\textbf{Generation time control}} \\ \hline
+
+USE\_PHYSICAL\_SPOTTING\_DURATION & & \\ \hline
+TAU\_EMBERGEN & & \\ \hline
+
+\rowcolor{gray!40}
+\multicolumn{3}{|c|}{\textbf{SPOTTING\_DISTANCE\_MODEL}} \\ \hline
+
+\rowcolor{gray!15}
+\multicolumn{3}{|l|}{L: Available when ACCUMULATION\_MODEL=LAGRANGIAN} \\ \hline
+
+\rowcolor{gray!15}
+\multicolumn{3}{|l|}{E: Available when ACCUMULATION\_MODEL=EULERIAN} \\ \hline
+
+\rowcolor{gray!20}
+\textbf{UNIFORM (L)} & \textbf{LOGNORMAL(L,E)} & \textbf{EMPIRICAL**(L,E)} \\ \hline
+
+MAX\_SPOTTING\_DISTANCE & MEAN\_SPOTTING\_DIST & P\_EPS \\ \hline
+
+MIN\_SPOTTING\_DISTANCE &
+NORMALIZED\_SPOTTING\_DIST\_VARIANCE &
+USE\_CUSTOMIZED\_PDF \\ \hline
+
+ & SPOT\_FLIN\_EXP & MU\_CROSSWIND \\ \hline
+ & SPOT\_WS\_EXP & SIGMA\_CROSSWIND \\ \hline
+ &  & MU\_DOWNWIND \\ \hline
+ &  & SIGMA\_DOWNWIND \\ \hline
+
+\rowcolor{gray!40}
+\multicolumn{3}{|c|}{\textbf{ACCUMULATION\_MODEL}} \\ \hline
+
+\rowcolor{gray!20}
+\textbf{LAGRANGIAN} & \textbf{EULERIAN} & \\ \hline
+
+EMBER\_SAMPLING\_FACTOR & & \\ \hline
+
+\rowcolor{gray!40}
+\multicolumn{3}{|c|}{\textbf{IGNITION\_MODEL}} \\ \hline
+
+\rowcolor{gray!20}
+\textbf{DIRECT} & \textbf{SIMPLE} & \textbf{PHYSICAL} \\ \hline
+
+PIGN & PIGN & LOCAL\_IGNITION\_TIME \\ \hline
+ & LOCAL\_IGNITION\_TIME & CELL\_IGNITION\_DELAY \\ \hline
+ & CELL\_IGNITION\_DELAY & DIFF\_WILDLAND\_IGNITION \\ \hline
+
+\end{tabular}%
+}
+
+\caption{Configuration options for ember generation, spotting distance, accumulation, and ignition models.}
+\label{tab:spotting_models}
+
+\end{table}

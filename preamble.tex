@@ -8,27 +8,36 @@
 \usepackage{longtable}
 \usepackage{pdflscape}   % rotates the *page* in the PDF viewer
 
-
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{caption}
+
+\usepackage{microtype} % better line breaking; reduces overfull boxes
+\usepackage{xurl}      % allow line breaks in \url/\path at more characters (e.g., underscores)
+
 \usepackage{siunitx}
 \sisetup{detect-all}
 
 \usepackage{setspace}
-
 \usepackage{amsmath}
 
-\onehalfspacing
-\usepackage{parskip}  % sets a sensible \parskip and zero \parindent
+% Manual-like density
+\setstretch{1.2} 
+\setlength{\parskip}{2pt}
+\setlength{\parindent}{1.2em}
+
+\usepackage{enumitem}
+\setlist{nosep}
 
 \usepackage{subcaption} %subfigures
 
 \usepackage[table,xcdraw]{xcolor}
 
-\newcommand{\code}[1]{%
-  \texttt{\hyphenchar\font=`\- #1}%
-}
+% Inline "code"/parameter names that can break nicely at underscores, etc.
+\newcommand{\code}[1]{\path|#1|}
+
+% Last-resort flexibility to avoid text running into the margin
+\emergencystretch=2em
 
 \usepackage{siunitx}    % alignment for numbers
 \sisetup{
@@ -47,4 +56,7 @@
       \end{minipage}
     \end{table}
 }
+
+% Hyperlink for inter-referenced texts
+\usepackage{hyperref}
 
