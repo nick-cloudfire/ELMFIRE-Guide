@@ -59,25 +59,25 @@ shopt -u nullglob
 echo "==> Staging Sphinx project"
 cp "$ROOT"/sphinx/*.py "$ROOT"/sphinx/*.rst "$ROOT"/sphinx/requirements.txt "$DOCS/"
 cp "$ROOT/references.bib" "$DOCS/"
-mkdir -p "$DOCS/_static" "$DOCS/_templates" "$DOCS/_assets"
+mkdir -p "$DOCS/_static" "$DOCS/_templates" "$DOCS/_extra"
 cp -r "$ROOT"/sphinx/_static/. "$DOCS/_static/" 2>/dev/null || true
 # Ship the PDF alongside the site so index.rst can link to it.
 # Ship the compiled guide alongside the site when one is available. Build it
 # here if latexmk is installed, otherwise reuse a pre-built copy.
 if command -v latexmk >/dev/null; then
     latexmk -pdf -quiet -outdir="$BUILD" "$ROOT/main.tex" >/dev/null 2>&1 \
-        && cp "$BUILD/main.pdf" "$DOCS/_assets/ELMFIRE_Guide.pdf" \
+        && cp "$BUILD/main.pdf" "$DOCS/_extra/ELMFIRE_Guide.pdf" \
         || echo "    WARNING: latexmk failed; skipping PDF" >&2
 fi
-if [[ ! -f "$DOCS/_assets/ELMFIRE_Guide.pdf" ]]; then
+if [[ ! -f "$DOCS/_extra/ELMFIRE_Guide.pdf" ]]; then
     for pdf in "$ROOT/ELMFIRE_Guide.pdf" "${ELMFIRE_BASE_DIR:-/nonexistent}/docs/ELMFIRE_Guide.pdf"; do
-        [[ -f "$pdf" ]] && cp "$pdf" "$DOCS/_assets/ELMFIRE_Guide.pdf" && break
+        [[ -f "$pdf" ]] && cp "$pdf" "$DOCS/_extra/ELMFIRE_Guide.pdf" && break
     done
 fi
 # No PDF anywhere: strip the download link so the build stays warning-clean.
-if [[ ! -f "$DOCS/_assets/ELMFIRE_Guide.pdf" ]]; then
+if [[ ! -f "$DOCS/_extra/ELMFIRE_Guide.pdf" ]]; then
     echo "    note: no ELMFIRE_Guide.pdf found; removing the download link"
-    sed -i '/:download:/d; /also available as a/d' "$DOCS/index.rst"
+    sed -i '/ELMFIRE_Guide.pdf/d; /also available as a single/d' "$DOCS/index.rst"
 fi
 
 # Hand-written overrides win over anything generated above.

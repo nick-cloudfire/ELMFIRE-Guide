@@ -93,8 +93,8 @@ Documentation
 
    bibliography
 
-The complete guide is also available as a
-:download:`PDF <_assets/ELMFIRE_Guide.pdf>`.
+The complete guide is also available as a single
+`PDF <ELMFIRE_Guide.pdf>`_, rebuilt from the same sources as this site.
 
 Background and citation
 =======================

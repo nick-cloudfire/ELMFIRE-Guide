@@ -21,7 +21,11 @@ bibtex_default_style = "plain"
 templates_path = ["_templates"]
 # _assets holds the downloadable PDF; :download: copies it into _downloads,
 # so it must not also be picked up as source or static content.
-exclude_patterns = ["_build", "_assets"]
+exclude_patterns = ["_build", "_extra"]
+
+# Publishes the guide at a stable https://elmfire.io/ELMFIRE_Guide.pdf, which
+# is what the elmfire README links to. :download: would content-hash the path.
+html_extra_path = ["_extra"]
 
 numfig = True                  # "Fig. 3" style captions, as in the PDF
 math_number_all = False
