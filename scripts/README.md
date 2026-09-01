@@ -104,6 +104,53 @@ check with `ls -a` on the server first, since a plain `ls` hides all of these.
 
 Always dry-run first. The `*deleting` lines list exactly what goes.
 
+## Unattended deployment
+
+`autodeploy.sh` pulls, and if `origin/main` has moved, rebuilds and publishes.
+It exits silently when nothing changed, so it is safe to run often.
+
+    ./scripts/autodeploy.sh --dry-run    # report what would happen
+    ./scripts/autodeploy.sh --force      # rebuild and publish regardless
+
+Safety properties, in order of importance:
+
+* The site is replaced **only if the build passes `--strict`**. A broken
+  commit on main leaves the previous site serving and the run exits non-zero.
+* `flock` prevents overlapping runs; a build plus rsync can outlast a timer.
+* `git merge --ff-only`, and it refuses to run with a dirty working tree --
+  unattended merges are never resolved by guessing.
+* `deploy.sh` still takes its backup and still refuses stale build output.
+
+Install the timer:
+
+    sudo cp etc/elmfire-docs.{service,timer} /etc/systemd/system/
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now elmfire-docs.timer
+
+    systemctl list-timers elmfire-docs      # when it next runs
+    journalctl -u elmfire-docs -n 50        # what happened last time
+    tail -f build/autodeploy.log            # the run log
+
+Or with cron, if you prefer:
+
+    0 4 * * *  /home/chris/ELMFIRE-Guide/scripts/autodeploy.sh
+
+### Running without sudo
+
+An unattended run must never block on a password prompt, so the service user
+needs to own both the docroot and the backup directory:
+
+    sudo chown -R chris:chris /var/www/html
+    mkdir -p ~/site-backups
+
+`deploy.sh` escalates only when either is unwritable, so once both are owned by
+the service user it never calls sudo. `BACKUP_DIR` and `KEEP_BACKUPS` are set
+in the unit file; the default retention is the 5 most recent backups, pruned
+automatically, since a daily deploy would otherwise add ~28 MB a day.
+
+The alternative is a narrow sudoers rule for `rsync` and `cp`, but owning the
+directories is simpler and gives the timer no privileges it does not need.
+
 ## Known source issues
 
 The build is warning-clean and passes `--strict`. Three cited bibliography

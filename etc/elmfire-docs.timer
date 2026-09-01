@@ -1,0 +1,12 @@
+[Unit]
+Description=Daily check for ELMFIRE documentation changes
+
+[Timer]
+# Every day at 04:00 local time, with jitter so it does not collide with
+# other cron-like work, and a catch-up run if the machine was off.
+OnCalendar=*-*-* 04:00:00
+RandomizedDelaySec=15m
+Persistent=true
+
+[Install]
+WantedBy=timers.target

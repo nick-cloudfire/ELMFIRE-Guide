@@ -14,15 +14,24 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 HTML="$ROOT/build/html"
 DOCROOT="${DOCROOT:-/var/www/html}"
+# Backups default to beside the docroot, but that usually needs root. Point
+# them at a directory the deploying user owns and no escalation is required,
+# which is what makes unattended deploys work.
+BACKUP_DIR="${BACKUP_DIR:-}"
+KEEP_BACKUPS="${KEEP_BACKUPS:-5}"
 HOST=""
 APPLY=0
+STAMP="$(date +%Y%m%d-%H%M%S)"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --apply)   APPLY=1; shift ;;
         --host)    HOST="$2"; shift 2 ;;
         --docroot) DOCROOT="$2"; shift 2 ;;
-        *) echo "usage: $0 [--apply] [--host user@server] [--docroot /var/www/html]" >&2; exit 2 ;;
+        --backup-dir) BACKUP_DIR="$2"; shift 2 ;;
+        --keep)    KEEP_BACKUPS="$2"; shift 2 ;;
+        *) echo "usage: $0 [--apply] [--host user@server] [--docroot DIR]" \
+                "[--backup-dir DIR] [--keep N]" >&2; exit 2 ;;
     esac
 done
 
@@ -70,23 +79,27 @@ echo "Preserving in docroot: ${KEEP[*]}"
 # Only escalate when actually writing, and only if it is actually needed.
 # The backup is created *beside* the docroot, so the parent directory must be
 # writable too -- /var/www/html is often writable when /var/www is not.
+: "${BACKUP_DIR:=$(dirname "$DOCROOT")}"
+BACKUP="$BACKUP_DIR/$(basename "$DOCROOT").bak-$STAMP"
+
 SUDO=()
 if [[ "$APPLY" == 1 && -z "$HOST" ]] \
-   && { [[ ! -w "$DOCROOT" ]] || [[ ! -w "$(dirname "$DOCROOT")" ]]; }; then
+   && { [[ ! -w "$DOCROOT" ]] || [[ ! -w "$BACKUP_DIR" ]]; }; then
     SUDO=(sudo)
 fi
 
 if [[ -n "$HOST" ]]; then
     if [[ "$APPLY" == 1 ]]; then
-        echo "==> Backing up $HOST:$DOCROOT to $DOCROOT.bak-$STAMP"
-        ssh "$HOST" "sudo cp -a '$DOCROOT' '$DOCROOT.bak-$STAMP'"
+        echo "==> Backing up $HOST:$DOCROOT to $BACKUP"
+        ssh "$HOST" "sudo cp -a '$DOCROOT' '$BACKUP'"
     fi
     echo "==> Syncing to $HOST:$DOCROOT"
     "${RSYNC[@]}" --rsync-path="sudo rsync" "$HTML/" "$HOST:$DOCROOT/"
 else
     if [[ "$APPLY" == 1 ]]; then
-        echo "==> Backing up $DOCROOT to $DOCROOT.bak-$STAMP"
-        "${SUDO[@]}" cp -a "$DOCROOT" "$DOCROOT.bak-$STAMP"
+        echo "==> Backing up $DOCROOT to $BACKUP"
+        "${SUDO[@]}" mkdir -p "$BACKUP_DIR"
+        "${SUDO[@]}" cp -a "$DOCROOT" "$BACKUP"
     fi
     echo "==> Syncing to $DOCROOT"
     mkdir -p "$DOCROOT" 2>/dev/null || true
@@ -95,11 +108,14 @@ fi
 
 if [[ "$APPLY" == 1 ]]; then
     echo
-    echo "Published. Rollback:  sudo rsync -a --delete $DOCROOT.bak-$STAMP/ $DOCROOT/"
-    # Each deploy leaves a full copy behind; say so rather than deleting for them.
-    if [[ -z "$HOST" ]]; then
-        n="$(find "$(dirname "$DOCROOT")" -maxdepth 1 -name "$(basename "$DOCROOT").bak-*" 2>/dev/null | wc -l)"
-        [[ "$n" -gt 3 ]] && echo "Note: $n old backups in $(dirname "$DOCROOT") - prune when convenient."
+    echo "Published. Rollback:  rsync -a --delete $BACKUP/ $DOCROOT/"
+    # Each deploy leaves a full copy behind; keep the most recent $KEEP_BACKUPS.
+    if [[ -z "$HOST" && "$KEEP_BACKUPS" -gt 0 ]]; then
+        mapfile -t old < <(find "$BACKUP_DIR" -maxdepth 1 -name "$(basename "$DOCROOT").bak-*" \
+                           2>/dev/null | sort -r | tail -n "+$((KEEP_BACKUPS + 1))")
+        for dir in "${old[@]:-}"; do
+            [[ -n "$dir" ]] && { echo "Pruning old backup: $dir"; "${SUDO[@]}" rm -rf "$dir"; }
+        done
     fi
     echo "Verify:               curl -sSI https://elmfire.io/ | head -1"
 else

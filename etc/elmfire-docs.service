@@ -1,0 +1,28 @@
+# Rebuild and publish the ELMFIRE documentation when origin/main has moved.
+# Install:
+#   sudo cp etc/elmfire-docs.{service,timer} /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now elmfire-docs.timer
+[Unit]
+Description=Rebuild and publish ELMFIRE documentation
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=chris
+WorkingDirectory=/home/chris/ELMFIRE-Guide
+ExecStart=/home/chris/ELMFIRE-Guide/scripts/autodeploy.sh
+
+# Backups go somewhere the service user owns, so no sudo is needed and the
+# run never blocks on a password prompt.
+Environment=BACKUP_DIR=/home/chris/site-backups
+Environment=KEEP_BACKUPS=7
+
+# A docs build should not disturb anything else running on the machine.
+Nice=10
+IOSchedulingClass=idle
+TimeoutStartSec=1800
+
+[Install]
+WantedBy=multi-user.target
