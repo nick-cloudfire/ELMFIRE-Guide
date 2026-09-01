@@ -27,7 +27,14 @@ for arg in "$@"; do
 done
 
 mkdir -p "$(dirname "$LOG")"
-exec >> "$LOG" 2>&1
+# Run by a timer, everything goes to the log (and thus the journal). Run by a
+# person at a terminal, show it as well -- otherwise an interactive run looks
+# like it did nothing at all.
+if [[ -t 1 ]]; then
+    exec > >(tee -a "$LOG") 2>&1
+else
+    exec >> "$LOG" 2>&1
+fi
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
 fail() { log "FAILED: $*"; exit 1; }
