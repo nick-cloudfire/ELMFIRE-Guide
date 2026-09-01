@@ -28,6 +28,13 @@ done
 
 [[ -f "$HTML/index.html" ]] || { echo "No build found. Run ./scripts/build.sh first." >&2; exit 1; }
 
+# Check before any output that suggests work is under way. With --host, rsync
+# must be present on the server too -- it is invoked at both ends.
+command -v rsync >/dev/null || {
+    echo "rsync not found.  sudo apt-get install -y rsync" >&2
+    exit 1
+}
+
 # A build that lost its stylesheets or search index is worse than no deploy.
 for required in index.html searchindex.js objects.inv _static; do
     [[ -e "$HTML/$required" ]] || { echo "Build looks incomplete: missing $required" >&2; exit 1; }

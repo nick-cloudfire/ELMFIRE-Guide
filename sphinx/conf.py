@@ -19,7 +19,9 @@ bibtex_bibfiles = ["references.bib"]
 bibtex_default_style = "plain"
 
 templates_path = ["_templates"]
-exclude_patterns = ["_build"]
+# _assets holds the downloadable PDF; :download: copies it into _downloads,
+# so it must not also be picked up as source or static content.
+exclude_patterns = ["_build", "_assets"]
 
 numfig = True                  # "Fig. 3" style captions, as in the PDF
 math_number_all = False

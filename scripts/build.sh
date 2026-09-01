@@ -24,7 +24,7 @@ command -v pandoc >/dev/null || { echo "pandoc not found - run scripts/setup.sh"
 
 # -a -E: the RST tree is regenerated from scratch on every run, so a cached
 # environment can leave stale pages and stale search-index terms behind.
-SPHINX_ARGS=(-b html -a -E)
+SPHINX_ARGS=(-b html -a -E -d "$BUILD/doctrees")
 SERVE=0
 for arg in "$@"; do
     case "$arg" in
@@ -59,23 +59,23 @@ shopt -u nullglob
 echo "==> Staging Sphinx project"
 cp "$ROOT"/sphinx/*.py "$ROOT"/sphinx/*.rst "$ROOT"/sphinx/requirements.txt "$DOCS/"
 cp "$ROOT/references.bib" "$DOCS/"
-mkdir -p "$DOCS/_static" "$DOCS/_templates"
+mkdir -p "$DOCS/_static" "$DOCS/_templates" "$DOCS/_assets"
 cp -r "$ROOT"/sphinx/_static/. "$DOCS/_static/" 2>/dev/null || true
 # Ship the PDF alongside the site so index.rst can link to it.
 # Ship the compiled guide alongside the site when one is available. Build it
 # here if latexmk is installed, otherwise reuse a pre-built copy.
 if command -v latexmk >/dev/null; then
     latexmk -pdf -quiet -outdir="$BUILD" "$ROOT/main.tex" >/dev/null 2>&1 \
-        && cp "$BUILD/main.pdf" "$DOCS/_static/ELMFIRE_Guide.pdf" \
+        && cp "$BUILD/main.pdf" "$DOCS/_assets/ELMFIRE_Guide.pdf" \
         || echo "    WARNING: latexmk failed; skipping PDF" >&2
 fi
-if [[ ! -f "$DOCS/_static/ELMFIRE_Guide.pdf" ]]; then
+if [[ ! -f "$DOCS/_assets/ELMFIRE_Guide.pdf" ]]; then
     for pdf in "$ROOT/ELMFIRE_Guide.pdf" "${ELMFIRE_BASE_DIR:-/nonexistent}/docs/ELMFIRE_Guide.pdf"; do
-        [[ -f "$pdf" ]] && cp "$pdf" "$DOCS/_static/ELMFIRE_Guide.pdf" && break
+        [[ -f "$pdf" ]] && cp "$pdf" "$DOCS/_assets/ELMFIRE_Guide.pdf" && break
     done
 fi
 # No PDF anywhere: strip the download link so the build stays warning-clean.
-if [[ ! -f "$DOCS/_static/ELMFIRE_Guide.pdf" ]]; then
+if [[ ! -f "$DOCS/_assets/ELMFIRE_Guide.pdf" ]]; then
     echo "    note: no ELMFIRE_Guide.pdf found; removing the download link"
     sed -i '/:download:/d; /also available as a/d' "$DOCS/index.rst"
 fi
