@@ -12,7 +12,9 @@
 \usepackage{multirow}
 \usepackage{caption}
 
-\usepackage{microtype} % better line breaking; reduces overfull boxes
+% expansion=false: automatic font expansion requires scalable fonts, which
+% a minimal TeX Live install may not have; protrusion is what matters here.
+\usepackage[expansion=false]{microtype} % better line breaking
 \usepackage{xurl}      % allow line breaks in \url/\path at more characters (e.g., underscores)
 
 \usepackage{setspace}

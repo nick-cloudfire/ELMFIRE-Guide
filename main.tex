@@ -21,9 +21,16 @@ Contact: \texttt{nick@cloudfire.com}
 
 \begin{document}
 
+% report's \maketitle resets the page counter, so the title page and the first
+% contents page share a number and hyperref emits a duplicate destination.
+% Suppressing page anchors across the front matter is hyperref's own fix, and
+% unlike renumbering it changes nothing a reader sees.
+\hypersetup{pageanchor=false}
 \maketitle
 
 \tableofcontents
+\clearpage
+\hypersetup{pageanchor=true}
 
 \chapter{Computational Guide}
 
