@@ -32,6 +32,15 @@ math_number_all = False
 
 html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
+html_css_files = ["custom.css"]
+
+# The sidebar and landing-page download links are rendered only when a PDF was
+# actually produced, so they cannot point at a missing file.
+from pathlib import Path as _Path
+_pdf = _Path(__file__).parent / "_extra" / "ELMFIRE_Guide.pdf"
+html_context = {"guide_pdf": "ELMFIRE_Guide.pdf" if _pdf.is_file() else ""}
+if _pdf.is_file():
+    tags.add("haspdf")          # noqa: F821 - Sphinx injects `tags`
 html_title = "ELMFIRE User Guide"
 html_theme_options = {
     "navigation_depth": 3,

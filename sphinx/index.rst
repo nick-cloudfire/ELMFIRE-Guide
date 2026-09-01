@@ -21,6 +21,12 @@ use, the mathematical formulation behind the model, the full input parameter
 reference, and the verification and validation cases the model is tested
 against.
 
+.. only:: haspdf
+
+   .. raw:: html
+
+      <a class="pdf-button" href="ELMFIRE_Guide.pdf">Download the full guide (PDF)</a>
+
 What ELMFIRE can do
 ===================
 
@@ -93,8 +99,11 @@ Documentation
 
    bibliography
 
-The complete guide is also available as a single
-`PDF <ELMFIRE_Guide.pdf>`_, rebuilt from the same sources as this site.
+.. only:: haspdf
+
+   The complete guide is also available as a single
+   `PDF <ELMFIRE_Guide.pdf>`_, rebuilt from the same sources as this site, so
+   the two never disagree.
 
 Background and citation
 =======================

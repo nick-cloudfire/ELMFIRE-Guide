@@ -1,0 +1,17 @@
+{% extends "!layout.html" %}
+
+{#- Append a Downloads section under the navigation tree. guide_pdf is set in
+    conf.py and is empty when no PDF was produced, so the link never dangles. -#}
+{% block menu %}
+  {{ super() }}
+  {% if guide_pdf %}
+  <p class="caption" role="heading"><span class="caption-text">Download</span></p>
+  <ul class="sidebar-downloads">
+    <li class="toctree-l1">
+      <a class="reference download" href="{{ pathto(guide_pdf, 1) }}">
+        User Guide (PDF)
+      </a>
+    </li>
+  </ul>
+  {% endif %}
+{% endblock %}

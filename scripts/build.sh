@@ -61,24 +61,37 @@ cp "$ROOT"/sphinx/*.py "$ROOT"/sphinx/*.rst "$ROOT"/sphinx/requirements.txt "$DO
 cp "$ROOT/references.bib" "$DOCS/"
 mkdir -p "$DOCS/_static" "$DOCS/_templates" "$DOCS/_extra"
 cp -r "$ROOT"/sphinx/_static/. "$DOCS/_static/" 2>/dev/null || true
+cp -r "$ROOT"/sphinx/_templates/. "$DOCS/_templates/" 2>/dev/null || true
 # Ship the PDF alongside the site so index.rst can link to it.
 # Ship the compiled guide alongside the site when one is available. Build it
 # here if latexmk is installed, otherwise reuse a pre-built copy.
 if command -v latexmk >/dev/null; then
-    latexmk -pdf -quiet -outdir="$BUILD" "$ROOT/main.tex" >/dev/null 2>&1 \
-        && cp "$BUILD/main.pdf" "$DOCS/_extra/ELMFIRE_Guide.pdf" \
-        || echo "    WARNING: latexmk failed; skipping PDF" >&2
+    # Keep the log: a LaTeX failure is almost always one missing .sty, and
+    # discarding the output makes that impossible to diagnose.
+    if latexmk -pdf -interaction=nonstopmode -outdir="$BUILD" "$ROOT/main.tex" \
+            > "$BUILD/latexmk.log" 2>&1; then
+        cp "$BUILD/main.pdf" "$DOCS/_extra/ELMFIRE_Guide.pdf"
+    else
+        echo "    WARNING: latexmk failed; skipping PDF" >&2
+        # No match is normal for some failures; grep returning 1 must not
+        # abort the build under `set -e` / pipefail.
+        { grep -m3 -E "^!|not found" "$BUILD/latexmk.log" || true; } \
+            2>/dev/null | sed 's/^/      /' >&2
+        echo "      full log: $BUILD/latexmk.log" >&2
+    fi
 fi
 if [[ ! -f "$DOCS/_extra/ELMFIRE_Guide.pdf" ]]; then
     for pdf in "$ROOT/ELMFIRE_Guide.pdf" "${ELMFIRE_BASE_DIR:-/nonexistent}/docs/ELMFIRE_Guide.pdf"; do
-        [[ -f "$pdf" ]] && cp "$pdf" "$DOCS/_extra/ELMFIRE_Guide.pdf" && break
+        if [[ -f "$pdf" ]]; then
+            cp "$pdf" "$DOCS/_extra/ELMFIRE_Guide.pdf"
+            break
+        fi
     done
 fi
-# No PDF anywhere: strip the download link so the build stays warning-clean.
-if [[ ! -f "$DOCS/_extra/ELMFIRE_Guide.pdf" ]]; then
-    echo "    note: no ELMFIRE_Guide.pdf found; removing the download link"
-    sed -i '/ELMFIRE_Guide.pdf/d; /also available as a single/d' "$DOCS/index.rst"
-fi
+# No PDF anywhere: conf.py drops the "haspdf" tag, so the download links are
+# not rendered at all. Nothing to edit out of index.rst.
+[[ -f "$DOCS/_extra/ELMFIRE_Guide.pdf" ]] || \
+    echo "    note: no ELMFIRE_Guide.pdf found; download links omitted"
 
 # Hand-written overrides win over anything generated above.
 if compgen -G "$ROOT/sphinx/overlay/*" >/dev/null; then

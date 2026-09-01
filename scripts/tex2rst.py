@@ -333,7 +333,7 @@ def nestable_math(line: str) -> str:
 
 
 def normalize_headings(rst: str) -> str:
-    """Ensure heading depth never increases by more than one level.
+    r"""Ensure heading depth never increases by more than one level.
 
     The guide uses \paragraph directly under \subsection in places, so pandoc
     emits a level-5 underline under a level-3 one. docutils rejects that as an

@@ -1,0 +1,42 @@
+/* Sidebar download link: match the navigation items around it, but mark it as
+   leaving the page with a downward arrow. */
+.wy-menu-vertical ul.sidebar-downloads {
+  margin-bottom: 1em;
+}
+.wy-menu-vertical ul.sidebar-downloads a.reference.download {
+  display: block;
+  padding: 0.4045em 1.618em;
+  color: #d9d9d9;
+  font-size: 90%;
+}
+.wy-menu-vertical ul.sidebar-downloads a.reference.download:hover {
+  background-color: #4e4a4a;
+  cursor: pointer;
+}
+.wy-menu-vertical ul.sidebar-downloads a.reference.download::before {
+  content: "\f019";                 /* FontAwesome download icon, bundled */
+  font-family: FontAwesome;
+  margin-right: 0.6em;
+}
+
+/* Prominent download button on the landing page. */
+a.pdf-button,
+a.pdf-button:visited {
+  display: inline-block;
+  margin: 0.4em 0 1.2em;
+  padding: 0.6em 1.3em;
+  background-color: #2980b9;
+  color: #fff;
+  border-radius: 3px;
+  font-weight: 700;
+  text-decoration: none;
+}
+a.pdf-button:hover {
+  background-color: #2e8ece;
+  color: #fff;
+}
+a.pdf-button::before {
+  content: "\f019";
+  font-family: FontAwesome;
+  margin-right: 0.6em;
+}
