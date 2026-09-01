@@ -39,6 +39,21 @@ command -v rsync >/dev/null || {
 for required in index.html searchindex.js objects.inv _static; do
     [[ -e "$HTML/$required" ]] || { echo "Build looks incomplete: missing $required" >&2; exit 1; }
 done
+# Belt and braces: build.sh clears its output dir, but if anything ever leaves
+# internal artefacts behind we must not publish them.
+for junk in .doctrees .buildinfo/../.doctrees; do
+    [[ -e "$HTML/$junk" ]] && {
+        echo "Refusing to deploy: $junk is present in the build output." >&2
+        echo "Re-run ./scripts/build.sh (it clears build/html first)." >&2
+        exit 1
+    }
+done
+if [[ "$(find "$HTML" -name 'ELMFIRE_Guide.pdf' | wc -l)" -gt 1 ]]; then
+    echo "Refusing to deploy: the guide PDF appears more than once." >&2
+    echo "Stale output -- re-run ./scripts/build.sh." >&2
+    exit 1
+fi
+
 echo "Build OK: $(find "$HTML" -name '*.html' | wc -l) pages, $(du -sh "$HTML" | cut -f1)"
 
 STAMP="$(date +%Y%m%d-%H%M%S)"

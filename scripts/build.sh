@@ -86,6 +86,12 @@ if compgen -G "$ROOT/sphinx/overlay/*" >/dev/null; then
     cp -r "$ROOT"/sphinx/overlay/. "$DOCS/"
 fi
 
+# sphinx-build only writes files, it never removes ones it no longer emits.
+# Without this, output from a previous build (stale pages, an old doctree
+# cache, a PDF that has since moved) accumulates and gets deployed.
+echo "==> Clearing previous output"
+rm -rf "$HTML"
+
 echo "==> Running sphinx-build"
 sphinx-build "${SPHINX_ARGS[@]}" "$DOCS" "$HTML"
 
