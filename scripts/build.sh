@@ -66,18 +66,26 @@ cp -r "$ROOT"/sphinx/_templates/. "$DOCS/_templates/" 2>/dev/null || true
 # Ship the compiled guide alongside the site when one is available. Build it
 # here if latexmk is installed, otherwise reuse a pre-built copy.
 if command -v latexmk >/dev/null; then
-    # Keep the log: a LaTeX failure is almost always one missing .sty, and
+    # After a failed run the aux and .fdb_latexmk files remain, and latexmk
+    # then reports "All targets are up-to-date" and replays the old error
+    # instead of retrying. Force a full pass whenever there is no PDF yet.
+    LATEXMK_ARGS=(-pdf -interaction=nonstopmode -outdir="$BUILD")
+    [[ -f "$BUILD/main.pdf" ]] || LATEXMK_ARGS+=(-g)
+
+    # Keep the logs: a LaTeX failure is almost always one missing .sty, and
     # discarding the output makes that impossible to diagnose.
-    if latexmk -pdf -interaction=nonstopmode -outdir="$BUILD" "$ROOT/main.tex" \
+    if latexmk "${LATEXMK_ARGS[@]}" "$ROOT/main.tex" \
             > "$BUILD/latexmk.log" 2>&1; then
         cp "$BUILD/main.pdf" "$DOCS/_extra/ELMFIRE_Guide.pdf"
     else
         echo "    WARNING: latexmk failed; skipping PDF" >&2
-        # No match is normal for some failures; grep returning 1 must not
-        # abort the build under `set -e` / pipefail.
-        { grep -m3 -E "^!|not found" "$BUILD/latexmk.log" || true; } \
-            2>/dev/null | sed 's/^/      /' >&2
-        echo "      full log: $BUILD/latexmk.log" >&2
+        # The useful error is in pdflatex's own log; latexmk's stdout often
+        # only says a subprocess failed. No match is normal, and grep
+        # returning 1 must not abort the build under `set -e` / pipefail.
+        { grep -m3 -E "^! |LaTeX Error|not found" "$BUILD/main.log" \
+              "$BUILD/latexmk.log" 2>/dev/null || true; } \
+            | sed "s|$BUILD/||; s/^/      /" >&2
+        echo "      full log: $BUILD/main.log" >&2
     fi
 fi
 if [[ ! -f "$DOCS/_extra/ELMFIRE_Guide.pdf" ]]; then
