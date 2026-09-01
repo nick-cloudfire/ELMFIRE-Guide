@@ -95,6 +95,13 @@ rm -rf "$HTML"
 echo "==> Running sphinx-build"
 sphinx-build "${SPHINX_ARGS[@]}" "$DOCS" "$HTML"
 
+# A clean sphinx-build does not mean the maths renders; check it explicitly.
+echo "==> Validating rendered maths"
+if ! "$PY" "$ROOT/scripts/mathcheck.py"; then
+    echo "Maths validation failed - the equations above will not render." >&2
+    exit 1
+fi
+
 echo
 echo "Site built: $HTML"
 echo "Report:     $BUILD/conversion_report.json"

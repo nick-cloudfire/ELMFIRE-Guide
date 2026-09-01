@@ -311,12 +311,25 @@ def render_figure(fig) -> str:
 
 def render_equation(eq) -> str:
     body = eq["body"]
-    if eq["env"]:                            # align/gather need their env kept
-        body = f"\\begin{{{eq['env']}}}\n{body}\n\\end{{{eq['env']}}}"
+    if eq["env"]:                            # keep the environment, nestably
+        env = NESTABLE.get(eq["env"], eq["env"])
+        body = f"\\begin{{{env}}}\n{body}\n\\end{{{env}}}"
     return "\n".join([".. math::", f"   :label: {anchor(eq['label'])}", "", indent(body), ""])
 
 
 UNDERLINES = ["=", "-", "~", "^", '"', "'"]
+
+# Sphinx wraps every `.. math::` body in \begin{split}...\end{split}. These
+# environments are only legal at the top level of display math, so nested in
+# split they make MathJax fail with "Erroneous nesting of equation structures".
+# Each has a variant that is legal inside another environment.
+NESTABLE = {"align": "aligned", "gather": "gathered", "eqnarray": "aligned",
+            "flalign": "aligned", "alignat": "aligned"}
+TOPLEVEL_ENV = re.compile(r"\\(begin|end)\{(%s)\*?\}" % "|".join(NESTABLE))
+
+
+def nestable_math(line: str) -> str:
+    return TOPLEVEL_ENV.sub(lambda m: "\\%s{%s}" % (m.group(1), NESTABLE[m.group(2)]), line)
 
 
 def normalize_headings(rst: str) -> str:
@@ -381,7 +394,7 @@ def collapse_math_blanks(rst: str) -> str:
                 if len(line) - len(line.lstrip()) <= pad:
                     break                   # dedent: directive body has ended
                 started = started or not re.match(r"^\s*:\w[\w-]*:", line)
-                out.append(line)
+                out.append(nestable_math(line))
                 i += 1
                 continue
 
