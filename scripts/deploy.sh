@@ -67,9 +67,12 @@ for path in "${KEEP[@]}"; do RSYNC+=(--exclude="$path"); done
 echo "Preserving in docroot: ${KEEP[*]}"
 [[ "$APPLY" == 1 ]] || RSYNC+=(--dry-run)
 
-# Only escalate when actually writing, and only if the docroot needs it.
+# Only escalate when actually writing, and only if it is actually needed.
+# The backup is created *beside* the docroot, so the parent directory must be
+# writable too -- /var/www/html is often writable when /var/www is not.
 SUDO=()
-if [[ "$APPLY" == 1 && -z "$HOST" && ! -w "$DOCROOT" ]]; then
+if [[ "$APPLY" == 1 && -z "$HOST" ]] \
+   && { [[ ! -w "$DOCROOT" ]] || [[ ! -w "$(dirname "$DOCROOT")" ]]; }; then
     SUDO=(sudo)
 fi
 
@@ -93,6 +96,11 @@ fi
 if [[ "$APPLY" == 1 ]]; then
     echo
     echo "Published. Rollback:  sudo rsync -a --delete $DOCROOT.bak-$STAMP/ $DOCROOT/"
+    # Each deploy leaves a full copy behind; say so rather than deleting for them.
+    if [[ -z "$HOST" ]]; then
+        n="$(find "$(dirname "$DOCROOT")" -maxdepth 1 -name "$(basename "$DOCROOT").bak-*" 2>/dev/null | wc -l)"
+        [[ "$n" -gt 3 ]] && echo "Note: $n old backups in $(dirname "$DOCROOT") - prune when convenient."
+    fi
     echo "Verify:               curl -sSI https://elmfire.io/ | head -1"
 else
     echo
