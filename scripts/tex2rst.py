@@ -138,7 +138,19 @@ def preprocess(text: str):
     """Strip what pandoc mishandles. Returns tex plus extracted metadata."""
     text = unwrap(text, "resizebox", 3)
     text = unwrap(text, "scalebox", 2)
+    # Sideways table headers. pandoc drops the rotated content, which leaves a
+    # table whose only surviving header cell is the unrotated first one.
+    text = unwrap(text, "rotatebox", 2)
     text = re.sub(r"\\(begin|end)\{adjustbox\}(\{[^}]*\})?", "", text)
+    # pandoc cannot nest a :sup: role inside **strong** and silently drops the
+    # role, so a superscript in a bold table header becomes a stray digit.
+    # Unicode carries it through unharmed where the characters exist.
+    _SUP = str.maketrans("0123456789+-n", "\u2070\u00b9\u00b2\u00b3\u2074"
+                                          "\u2075\u2076\u2077\u2078\u2079"
+                                          "\u207a\u207b\u207f")
+    text = re.sub(r"\\textsuperscript\{([0-9+\-n]+)\}",
+                  lambda m: m.group(1).translate(_SUP), text)
+
     # Presentation-only table commands with no HTML equivalent.
     text = re.sub(r"\\(row|cell)color\{[^}]*\}", "", text)
     text = re.sub(r"\\renewcommand\{[^}]*\}\{[^}]*\}", "", text)
